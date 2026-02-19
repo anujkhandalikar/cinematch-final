@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, use } from "react"
+import { useEffect, useState, useRef, use } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { SwipeDeck } from "@/components/SwipeDeck"
@@ -28,6 +28,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const [movies, setMovies] = useState<Movie[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [copied, setCopied] = useState(false)
+    const [timeLeft, setTimeLeft] = useState(180) // 3 minutes in seconds
+    const timerStarted = useRef(false)
 
     // Initialization
     useEffect(() => {
@@ -124,6 +126,29 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             .from("rooms")
             .update({ status: "active", started_at: new Date().toISOString() })
             .eq("id", code)
+    }
+
+    // Start countdown timer when game becomes active
+    useEffect(() => {
+        if (status === "active" && !timerStarted.current) {
+            timerStarted.current = true
+            const interval = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(interval)
+                        return 0
+                    }
+                    return prev - 1
+                })
+            }, 1000)
+            return () => clearInterval(interval)
+        }
+    }, [status])
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60).toString().padStart(2, "0")
+        const s = (seconds % 60).toString().padStart(2, "0")
+        return `${m}:${s}`
     }
 
     const handleCopy = () => {
@@ -290,15 +315,23 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
                 {/* Header */}
-                <header className="w-full flex justify-between items-center p-6 z-50 relative">
-                    <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-4 py-2 border border-zinc-800 shadow-xl">
-                        <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
-                        <span className="font-black text-sm tracking-widest uppercase text-zinc-300">Room {code}</span>
-                    </div>
+                <header className="w-full grid grid-cols-3 items-center p-6 z-50 relative">
+                    {/* Left spacer for centering */}
+                    <div />
 
-                    <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-4 py-2 border border-zinc-800 shadow-xl text-zinc-400">
-                        <Clock className="w-4 h-4 text-red-600" />
-                        <span className="text-sm font-bold uppercase tracking-wider">Voting Phase</span>
+                    {/* Center spacer */}
+                    <div />
+
+                    {/* Timer on the right */}
+                    <div className="flex justify-end">
+                        <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2.5 border shadow-xl transition-colors duration-500 ${timeLeft <= 30
+                            ? "border-red-600/60 shadow-[0_0_20px_-5px_rgba(220,38,38,0.4)]"
+                            : "border-zinc-800"
+                            }`}>
+                            <Clock className={`w-4 h-4 transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-red-600"}`} />
+                            <span className={`text-sm font-black tracking-widest tabular-nums transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-zinc-300"
+                                }`}>{formatTime(timeLeft)}</span>
+                        </div>
                     </div>
                 </header>
 
