@@ -55,22 +55,22 @@ export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
             onDragEnd={handleDragEnd}
             animate={exitX !== null ? { x: exitX * 2, opacity: 0 } : {}}
             transition={{ duration: 0.2 }}
-            className="relative rounded-xl overflow-hidden shadow-xl bg-card border border-border cursor-grab active:cursor-grabbing"
+            className="relative rounded-3xl overflow-hidden shadow-2xl bg-zinc-900 border border-zinc-800 cursor-grab active:cursor-grabbing"
         >
             {/* Swipe Feedback Overlay - RIGHT (Like) */}
             <motion.div
                 style={{ opacity: rightOpacity }}
                 className="absolute inset-0 bg-green-500/30 z-20 flex items-center justify-center pointer-events-none"
             >
-                <Heart className="w-32 h-32 text-white fill-current" />
+                <Heart className="w-32 h-32 text-white fill-current drop-shadow-lg" />
             </motion.div>
 
             {/* Swipe Feedback Overlay - LEFT (Pass) */}
             <motion.div
                 style={{ opacity: leftOpacity }}
-                className="absolute inset-0 bg-red-500/30 z-20 flex items-center justify-center pointer-events-none"
+                className="absolute inset-0 bg-red-600/30 z-20 flex items-center justify-center pointer-events-none"
             >
-                <X className="w-32 h-32 text-white" />
+                <X className="w-32 h-32 text-white drop-shadow-lg" />
             </motion.div>
 
             {/* Movie Poster */}
@@ -85,16 +85,19 @@ export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
                 />
 
                 {/* Gradient & Text Content */}
-                <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/90 via-black/60 to-transparent p-6 pt-20 text-white">
-                    <h2 className="text-2xl font-bold leading-tight shadow-black drop-shadow-md">
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+
+                <div className="absolute bottom-0 w-full p-8 pt-20 text-white z-10">
+                    <h2 className="text-4xl font-black uppercase leading-none tracking-tighter shadow-black drop-shadow-md mb-3">
                         {movie.title}
                     </h2>
-                    <div className="flex items-center gap-2 mt-2 text-sm font-medium text-gray-200">
-                        <span className="bg-white/20 px-2 py-0.5 rounded backdrop-blur-sm">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-bold tracking-wide">
+                        <span className="bg-white text-black px-2 py-0.5 rounded-md">
                             {movie.year}
                         </span>
-                        <span>•</span>
-                        <span>{Array.isArray(movie.genre) ? movie.genre.join(', ') : movie.genre}</span>
+                        <span className="text-zinc-300 uppercase tracking-wider text-xs">
+                            {Array.isArray(movie.genre) ? movie.genre.join(' • ') : movie.genre}
+                        </span>
                     </div>
                 </div>
             </div>

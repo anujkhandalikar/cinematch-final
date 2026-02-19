@@ -53,21 +53,23 @@ export default function SoloPage() {
     }
 
     return (
-        <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-background overflow-hidden max-w-md mx-auto relative">
-            <header className="w-full flex items-center justify-between mb-4 z-10">
-                <Button variant="ghost" size="icon" onClick={() => router.push("/")}>
-                    <ArrowLeft className="w-5 h-5" />
+        <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+
+            <header className="w-full flex items-center justify-between mb-4 z-10 max-w-md mx-auto pt-4 relative">
+                <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
+                    <ArrowLeft className="w-6 h-6" />
                 </Button>
-                <div className="flex items-center gap-2 font-mono text-xl font-bold tabular-nums">
-                    <Clock className="w-5 h-5 text-primary" />
-                    <span className={timeLeft < 30 ? "text-red-500 animate-pulse" : ""}>
+                <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2 border border-zinc-800 shadow-xl">
+                    <Clock className="w-4 h-4 text-red-600" />
+                    <span className={`font-black text-lg tracking-widest tabular-nums ${timeLeft < 30 ? "text-red-500 animate-pulse" : "text-white"}`}>
                         {formatTime(timeLeft)}
                     </span>
                 </div>
-                <div className="w-10" /> {/* Spacer */}
+                <div className="w-12" /> {/* Spacer */}
             </header>
 
-            <div className="flex-1 w-full flex items-center justify-center">
+            <div className="flex-1 w-full flex items-center justify-center relative z-10">
                 <SwipeDeck
                     movies={movies}
                     onSwipe={handleSwipe}
@@ -75,15 +77,21 @@ export default function SoloPage() {
                 />
             </div>
 
-            <div className="w-full mt-8 mb-4 space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
                     <span>{likedMovies.length} liked</span>
                     <span>{movies.length} remaining</span>
                 </div>
-                <Progress value={(180 - timeLeft) / 1.8} className="h-2" />
+                {/* Custom Progress Bar since Shadcn Progress might be too simple */}
+                <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                    <div
+                        className="h-full bg-red-600 transition-all duration-1000 ease-linear rounded-full"
+                        style={{ width: `${((180 - timeLeft) / 180) * 100}%` }}
+                    />
+                </div>
+
                 <Button
-                    variant="secondary"
-                    className="w-full mt-4"
+                    className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold uppercase tracking-wider rounded-full transition-all"
                     onClick={finishSession}
                 >
                     Review Shortlist ({likedMovies.length})

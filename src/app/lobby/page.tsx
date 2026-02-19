@@ -158,45 +158,53 @@ export default function LobbyPage() {
 
     if (isCheckingAuth) {
         return (
-            <div className="flex h-screen items-center justify-center bg-black text-white">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+            <div className="flex h-screen items-center justify-center bg-black text-white dot-pattern">
+                <Loader2 className="h-8 w-8 animate-spin text-red-600" />
             </div>
         )
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-background dot-pattern">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/80 to-background pointer-events-none" />
+        <div className="flex min-h-screen items-center justify-center p-4 bg-black text-white dot-pattern relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="z-10 w-full max-w-md"
+                className="z-10 w-full max-w-md relative"
             >
-                <Card className="border-zinc-800 bg-zinc-900/50 backdrop-blur-xl shadow-2xl">
-                    <CardHeader>
-                        <div className="flex items-center gap-2">
+                {/* Header that mimics Landing Page badges */}
+                <div className="flex justify-center mb-8">
+                    <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-400 uppercase tracking-widest backdrop-blur-sm">
+                        <Users className="w-3 h-3 text-red-600 mr-2" />
+                        Lobby
+                    </span>
+                </div>
+
+                <div className="bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-4">
                             {mode === 'dual' ? (
-                                <Button variant="ghost" size="icon" onClick={() => setMode('select')} className="-ml-2 hover:bg-zinc-800 text-zinc-400">
-                                    <ArrowLeft className="w-4 h-4" />
+                                <Button variant="ghost" size="icon" onClick={() => setMode('select')} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                                    <ArrowLeft className="w-5 h-5" />
                                 </Button>
                             ) : (
-                                <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="-ml-2 hover:bg-zinc-800 text-zinc-400">
-                                    <ArrowLeft className="w-4 h-4" />
+                                <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                                    <ArrowLeft className="w-5 h-5" />
                                 </Button>
                             )}
-                            <CardTitle className="text-xl">
-                                {mode === 'select' ? 'Choose Your Mode' : 'Dual Mode Lobby'}
-                            </CardTitle>
+                            <div className="space-y-1">
+                                <h1 className="text-2xl font-black uppercase tracking-tighter text-white">
+                                    {mode === 'select' ? 'Choose Mode' : 'Dual Mode'}
+                                </h1>
+                                <p className="text-xs font-bold tracking-widest text-zinc-500 uppercase">
+                                    {mode === 'select'
+                                        ? 'Solo or Duo?'
+                                        : 'Sync with a partner'}
+                                </p>
+                            </div>
                         </div>
-                        <CardDescription className="text-zinc-400">
-                            {mode === 'select'
-                                ? 'Watch alone or sync with a partner'
-                                : 'Start a new session or join a friend'}
-                        </CardDescription>
-                    </CardHeader>
 
-                    <CardContent className="space-y-6">
                         <AnimatePresence mode="wait">
                             {mode === 'select' ? (
                                 <motion.div
@@ -204,36 +212,34 @@ export default function LobbyPage() {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
-                                    className="grid gap-4"
+                                    className="grid gap-4 pt-4"
                                 >
-                                    <Button
-                                        variant="outline"
-                                        className="h-24 justify-start px-6 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
+                                    <button
+                                        className="group relative flex items-center p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all duration-300 text-left w-full"
                                         onClick={handleSoloMode}
                                         disabled={isCreating}
                                     >
-                                        <div className="bg-indigo-500/10 p-3 rounded-full mr-4 group-hover:bg-indigo-500/20 transition-colors">
-                                            <Play className="w-6 h-6 text-indigo-500" />
+                                        <div className="mr-6 p-4 rounded-full bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
+                                            <Play className="w-6 h-6 text-red-600" />
                                         </div>
-                                        <div className="text-left">
-                                            <div className="font-semibold text-lg text-foreground">Solo Mode</div>
-                                            <div className="text-sm text-muted-foreground">Quick 3-minute swipe session alone</div>
+                                        <div>
+                                            <h3 className="font-black text-lg uppercase tracking-wide text-white mb-1 group-hover:text-red-500 transition-colors">Solo Mode</h3>
+                                            <p className="text-zinc-500 text-sm font-medium">Quick 3-minute swipe session alone.</p>
                                         </div>
-                                    </Button>
+                                    </button>
 
-                                    <Button
-                                        variant="outline"
-                                        className="h-24 justify-start px-6 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
+                                    <button
+                                        className="group relative flex items-center p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/80 transition-all duration-300 text-left w-full"
                                         onClick={() => setMode('dual')}
                                     >
-                                        <div className="bg-pink-500/10 p-3 rounded-full mr-4 group-hover:bg-pink-500/20 transition-colors">
-                                            <Users className="w-6 h-6 text-pink-500" />
+                                        <div className="mr-6 p-4 rounded-full bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700 transition-colors">
+                                            <Users className="w-6 h-6 text-zinc-400" />
                                         </div>
-                                        <div className="text-left">
-                                            <div className="font-semibold text-lg text-foreground">Dual Mode</div>
-                                            <div className="text-sm text-muted-foreground">Sync with a partner and match</div>
+                                        <div>
+                                            <h3 className="font-black text-lg uppercase tracking-wide text-white mb-1 group-hover:text-zinc-300 transition-colors">Dual Mode</h3>
+                                            <p className="text-zinc-500 text-sm font-medium">Link up and find a match together.</p>
                                         </div>
-                                    </Button>
+                                    </button>
                                 </motion.div>
                             ) : (
                                 <motion.div
@@ -241,16 +247,15 @@ export default function LobbyPage() {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    className="space-y-6"
+                                    className="space-y-8 pt-4"
                                 >
-                                    <div className="space-y-2">
-                                        <h3 className="text-sm font-medium text-zinc-300">Start New Session</h3>
+                                    <div className="space-y-4">
                                         <Button
-                                            className="w-full h-12 text-lg gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 border-0"
+                                            className="w-full h-16 text-lg bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02]"
                                             onClick={handleCreateRoom}
                                             disabled={isCreating}
                                         >
-                                            {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                                            {isCreating ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Zap className="w-5 h-5 mr-2" />}
                                             {isCreating ? "Creating..." : "Create Room"}
                                         </Button>
                                     </div>
@@ -259,34 +264,34 @@ export default function LobbyPage() {
                                         <div className="absolute inset-0 flex items-center">
                                             <span className="w-full border-t border-zinc-800" />
                                         </div>
-                                        <div className="relative flex justify-center text-xs uppercase">
-                                            <span className="bg-zinc-900 px-2 text-zinc-500">Or join existing</span>
+                                        <div className="relative flex justify-center text-xs uppercase tracking-widest font-bold">
+                                            <span className="bg-zinc-950/0 px-2 text-zinc-600 backdrop-blur-xl">Or join existing</span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <div className="flex gap-2">
+                                    <div className="space-y-4">
+                                        <div className="flex gap-3">
                                             <Input
                                                 placeholder="ROOM CODE"
                                                 value={joinCode}
                                                 onChange={(e) => setJoinCode(e.target.value)}
-                                                className="uppercase tracking-widest text-center h-12 text-lg font-mono border-zinc-700 bg-zinc-800/50 focus:ring-purple-500"
+                                                className="uppercase tracking-[0.2em] text-center h-14 text-xl font-black border-zinc-800 bg-zinc-900/50 focus:ring-red-600 focus:border-red-600 rounded-xl"
                                                 maxLength={4}
                                             />
-                                            <Button
-                                                onClick={handleJoinRoom}
-                                                variant="secondary"
-                                                className="h-12 w-24 bg-white text-black hover:bg-zinc-200"
-                                            >
-                                                Join
-                                            </Button>
                                         </div>
+                                        <Button
+                                            onClick={handleJoinRoom}
+                                            variant="outline"
+                                            className="w-full h-14 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-900 hover:text-white font-bold text-base uppercase tracking-wider rounded-full"
+                                        >
+                                            Join Room
+                                        </Button>
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             </motion.div>
         </div>
     )
