@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, use } from "react"
+import { useEffect, useState, useRef, use } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { SwipeDeck } from "@/components/SwipeDeck"
@@ -28,6 +28,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const [movies, setMovies] = useState<Movie[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [copied, setCopied] = useState(false)
+    const [timeLeft, setTimeLeft] = useState(180) // 3 minutes in seconds
+    const timerStarted = useRef(false)
 
     // Initialization
     useEffect(() => {
@@ -126,6 +128,29 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             .eq("id", code)
     }
 
+    // Start countdown timer when game becomes active
+    useEffect(() => {
+        if (status === "active" && !timerStarted.current) {
+            timerStarted.current = true
+            const interval = setInterval(() => {
+                setTimeLeft(prev => {
+                    if (prev <= 1) {
+                        clearInterval(interval)
+                        return 0
+                    }
+                    return prev - 1
+                })
+            }, 1000)
+            return () => clearInterval(interval)
+        }
+    }, [status])
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60).toString().padStart(2, "0")
+        const s = (seconds % 60).toString().padStart(2, "0")
+        return `${m}:${s}`
+    }
+
     const handleCopy = () => {
         const url = `${window.location.origin}/lobby?code=${code}` // Or just the room link
         navigator.clipboard.writeText(code) // Or URL
@@ -137,15 +162,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     // --- Game Logic ---
 
     const handleSwipe = async (movieId: string, direction: "left" | "right") => {
-        // 1. Record Swipe (Fire and forget interaction for speed)
+        // 1. Record Swipe (fire-and-forget for speed)
         const { error } = await supabase.from("swipes").insert({
             room_id: code,
             user_id: userId,
-            movie_id: movieId,
+            movie_id: movieId,  // text ID from static list
             direction
         })
 
-        if (error) console.error("Swipe error:", error)
+        if (error) {
+            // Log full details for debugging (the {} was because error is not a plain object)
+            console.error("Swipe error:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint)
+            // Don't return — still try to check for match client-side
+        }
 
         // 2. Check Match (only on right swipe)
         if (direction === "right") {
@@ -186,39 +215,43 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         const isHost = participants[0]?.user_id === userId // Simple host check
 
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background dot-pattern relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-transparent pointer-events-none" />
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black text-white dot-pattern relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="w-full max-w-md space-y-8 z-10"
+                    className="w-full max-w-md space-y-8 z-10 relative"
                 >
-                    <div className="text-center space-y-2">
-                        <div className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs text-zinc-400 backdrop-blur-md mb-4">
-                            <span className="flex h-2 w-2 rounded-full bg-yellow-500 mr-2 animate-pulse"></span>
+                    <div className="text-center space-y-6">
+                        <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-400 uppercase tracking-widest backdrop-blur-sm">
+                            <span className="flex h-2 w-2 rounded-full bg-red-600 mr-2 animate-pulse"></span>
                             Waiting for players
+                        </span>
+
+                        <div className="relative group">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-purple-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                            <h1 className="relative text-8xl font-black tracking-tighter text-white drop-shadow-2xl">
+                                {code}
+                            </h1>
                         </div>
-                        <h1 className="text-5xl font-mono font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-500">
-                            {code}
-                        </h1>
-                        <p className="text-muted-foreground">Share this code to sync up</p>
+                        <p className="text-zinc-500 font-medium tracking-wide">Share this code to sync up</p>
                     </div>
 
-                    <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 rounded-2xl p-6 space-y-6 shadow-2xl">
+                    <div className="bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/60 rounded-2xl p-8 space-y-8 shadow-2xl">
                         {/* Share Section */}
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                             <Button
                                 variant="outline"
-                                className="flex-1 h-12 text-zinc-300 border-zinc-700 hover:bg-zinc-800"
+                                className="flex-1 h-14 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-900 hover:text-white font-bold text-base uppercase tracking-wider rounded-full transition-all"
                                 onClick={handleCopy}
                             >
-                                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                                {copied ? <Check className="w-5 h-5 mr-2 text-green-500" /> : <Copy className="w-5 h-5 mr-2" />}
                                 {copied ? "Copied" : "Copy Code"}
                             </Button>
                             <Button
                                 variant="outline"
-                                className="h-12 w-12 px-0 border-zinc-700 hover:bg-zinc-800"
+                                className="h-14 w-14 px-0 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-900 hover:text-white rounded-full transition-all"
                                 onClick={() => {
                                     if (navigator.share) {
                                         navigator.share({
@@ -231,41 +264,44 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                     }
                                 }}
                             >
-                                <Share2 className="w-4 h-4" />
+                                <Share2 className="w-5 h-5" />
                             </Button>
                         </div>
 
                         {/* Participants List */}
                         <div className="space-y-4">
-                            <h3 className="flex items-center gap-2 text-sm font-medium text-zinc-400 uppercase tracking-wider">
+                            <h3 className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
                                 <Users className="w-4 h-4" /> Players ({participants.length})
                             </h3>
                             <div className="space-y-3">
                                 {participants.map((p) => (
-                                    <div key={p.user_id} className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs font-bold">
+                                    <div key={p.user_id} className="flex items-center justify-between p-4 bg-zinc-900/60 rounded-xl border border-zinc-800">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700 flex items-center justify-center text-sm font-black text-white">
                                                 {p.user_id.slice(0, 2).toUpperCase()}
                                             </div>
-                                            <span className="font-medium text-zinc-200">
-                                                {p.user_id === userId ? "You" : "Player 2"}
+                                            <span className="font-bold text-zinc-200 tracking-wide">
+                                                {p.user_id === userId ? "YOU" : "PLAYER 2"}
                                             </span>
                                         </div>
-                                        <span className="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_10px_2px_rgba(34,197,94,0.4)]"></span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Ready</span>
+                                            <span className="flex h-2.5 w-2.5 rounded-full bg-red-600 shadow-[0_0_10px_2px_rgba(220,38,38,0.4)] animate-pulse"></span>
+                                        </div>
                                     </div>
                                 ))}
-                                {participants.length === 0 && <span className="text-sm text-muted-foreground">Waiting...</span>}
+                                {participants.length === 0 && <span className="text-sm text-zinc-500 italic">Waiting for connection...</span>}
                             </div>
                         </div>
 
                         {/* Start Button */}
                         <Button
                             size="lg"
-                            className="w-full h-14 text-lg font-bold bg-white text-black hover:bg-zinc-200 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
+                            className="w-full h-16 text-lg bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02]"
                             onClick={startGame}
                             disabled={participants.length < 1} // Allow 1 player for testing/Solo, but ideally 2 for Dual
                         >
-                            <Play className="w-5 h-5 mr-2" /> Start Session
+                            <Play className="w-5 h-5 mr-2 fill-current" /> Start Session
                         </Button>
                     </div>
                 </motion.div>
@@ -275,22 +311,32 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     if (status === "active") {
         return (
-            <div className="flex flex-col items-center min-h-screen bg-background text-foreground overflow-hidden">
-                {/* Header */}
-                <header className="w-full flex justify-between items-center p-4 z-50">
-                    <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur rounded-full px-3 py-1.5 border border-zinc-800">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        <span className="font-mono font-bold text-sm tracking-widest">{code}</span>
-                    </div>
+            <div className="flex flex-col items-center min-h-screen bg-black text-white dot-pattern overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
-                    <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur rounded-full px-3 py-1.5 border border-zinc-800 text-zinc-400">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm font-medium">Voting</span>
+                {/* Header */}
+                <header className="w-full grid grid-cols-3 items-center p-6 z-50 relative">
+                    {/* Left spacer for centering */}
+                    <div />
+
+                    {/* Center spacer */}
+                    <div />
+
+                    {/* Timer on the right */}
+                    <div className="flex justify-end">
+                        <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2.5 border shadow-xl transition-colors duration-500 ${timeLeft <= 30
+                            ? "border-red-600/60 shadow-[0_0_20px_-5px_rgba(220,38,38,0.4)]"
+                            : "border-zinc-800"
+                            }`}>
+                            <Clock className={`w-4 h-4 transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-red-600"}`} />
+                            <span className={`text-sm font-black tracking-widest tabular-nums transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-zinc-300"
+                                }`}>{formatTime(timeLeft)}</span>
+                        </div>
                     </div>
                 </header>
 
                 {/* Game Area */}
-                <div className="flex-1 w-full flex flex-col items-center justify-center relative">
+                <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 pb-20">
                     <SwipeDeck
                         movies={movies}
                         onSwipe={handleSwipe}

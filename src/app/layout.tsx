@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { inter } from "@/lib/fonts";
 import { Toaster } from "@/components/ui/sonner";
+import SiteHeader from "@/components/SiteHeader";
 
 export const metadata: Metadata = {
   title: "CineMatch",
@@ -14,8 +15,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased text-foreground bg-background`}>
+        <SiteHeader />
         {children}
         <Toaster />
       </body>
