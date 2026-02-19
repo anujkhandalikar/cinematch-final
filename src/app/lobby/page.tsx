@@ -132,28 +132,9 @@ export default function LobbyPage() {
         router.push(`/room/${room.id}`)
     }
 
-    const handleSoloMode = async () => {
-        // Could create a 'solo' room implicitly or just route to a solo page
-        // For consistent architecture, let's create a solo room
-        setIsCreating(true)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const code = generateCode()
-        const { error } = await supabase.from('rooms').insert({
-            id: code,
-            created_by: user.id,
-            status: 'active', // Solo starts immediately
-            mode: 'solo'
-        })
-
-        if (error) {
-            toast.error("Failed to start solo session")
-            setIsCreating(false)
-            return
-        }
-
-        router.push(`/room/${code}`)
+    const handleSoloMode = () => {
+        // Route directly to the dedicated solo swipe page
+        router.push("/solo")
     }
 
     if (isCheckingAuth) {

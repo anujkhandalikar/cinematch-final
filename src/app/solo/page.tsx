@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { MOVIES } from "@/lib/movies"
 import { SwipeDeck } from "@/components/SwipeDeck"
+import { NudgeOverlay } from "@/components/NudgeOverlay"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock } from "lucide-react"
@@ -18,13 +19,28 @@ export default function SoloPage() {
     const [movies, setMovies] = useState(() => shuffle(MOVIES))
     const [timeLeft, setTimeLeft] = useState(180) // 3 minutes
     const [likedMovies, setLikedMovies] = useState<string[]>([])
+    const [showNudge, setShowNudge] = useState(false)
+    const [nudgeDismissed, setNudgeDismissed] = useState(false)
+
+    const NUDGE_THRESHOLD = 3
+
+    // Ref to always have the latest likedMovies (avoids stale closure in timer)
+    const likedMoviesRef = useRef(likedMovies)
+    likedMoviesRef.current = likedMovies
+
+    const finishSession = useCallback(() => {
+        sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
+        router.push("/results")
+    }, [router])
 
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer)
-                    finishSession()
+                    // Use ref to get latest liked movies
+                    sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
+                    router.push("/results")
                     return 0
                 }
                 return prev - 1
@@ -32,18 +48,29 @@ export default function SoloPage() {
         }, 1000)
 
         return () => clearInterval(timer)
-    }, [])
-
-    const finishSession = () => {
-        // Save results and redirect
-        sessionStorage.setItem("solo_results", JSON.stringify(likedMovies))
-        router.push("/results") // We'll create this next
-    }
+    }, [router])
 
     const handleSwipe = (movieId: string, direction: "left" | "right") => {
         if (direction === "right") {
-            setLikedMovies((prev) => [...prev, movieId])
+            setLikedMovies((prev) => {
+                const updated = [...prev, movieId]
+                // Trigger nudge when reaching threshold for the first time
+                if (updated.length >= NUDGE_THRESHOLD && !nudgeDismissed) {
+                    setShowNudge(true)
+                }
+                return updated
+            })
         }
+    }
+
+    const handleNudgeContinue = () => {
+        setShowNudge(false)
+        setNudgeDismissed(true)
+    }
+
+    const handleNudgeCheckShortlist = () => {
+        setShowNudge(false)
+        finishSession()
     }
 
     const formatTime = (seconds: number) => {
@@ -97,6 +124,14 @@ export default function SoloPage() {
                     Review Shortlist ({likedMovies.length})
                 </Button>
             </div>
+
+            {/* S5 Nudge Overlay */}
+            <NudgeOverlay
+                show={showNudge}
+                likedCount={likedMovies.length}
+                onContinue={handleNudgeContinue}
+                onCheckShortlist={handleNudgeCheckShortlist}
+            />
         </div>
     )
 }
