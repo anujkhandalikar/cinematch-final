@@ -160,8 +160,8 @@ export default function ResultsPage() {
                         >
                             <Home className="w-5 h-5 mr-2" /> Home
                         </Button>
-                        <div className="text-zinc-500 text-xs tracking-wide">
-                            Built with ❤️ by <a href="https://anujk.in" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-zinc-300 transition-colors">Anuj</a>
+                        <div className="text-zinc-400 text-sm tracking-wide">
+                            Built with ❤️ by <a href="https://anujk.in" target="_blank" rel="noopener noreferrer" className="text-zinc-300 underline underline-offset-2 hover:text-white transition-colors">Anuj</a>
                         </div>
                     </div>
                 </div>
