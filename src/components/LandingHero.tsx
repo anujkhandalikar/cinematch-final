@@ -45,10 +45,8 @@ export default function LandingHero() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                     className="max-w-xl text-zinc-400 text-lg md:text-xl font-medium leading-relaxed"
                 >
-                    You spend <span className="text-white font-bold">25 minutes</span> choosing what to watch. <br className="hidden md:block" />
-                    We cut that to <span className="text-white font-bold">3 minutes.</span>
-                    <br />
-                    Based on <a href="https://drive.google.com/file/d/1tDLNhn8A9PWnxelA1sJxlSGup9brrfTp/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-red-500 underline underline-offset-2 hover:text-red-400 transition-colors">this thesis</a>.
+                    Decisions, simplified<br />
+                    Based on <a href="https://drive.google.com/file/d/1tDLNhn8A9PWnxelA1sJxlSGup9brrfTp/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-red-500 underline underline-offset-2 hover:text-red-400 transition-colors">research</a>.
                 </motion.p>
 
                 {/* CTA Buttons */}
@@ -59,7 +57,7 @@ export default function LandingHero() {
                     className="flex flex-col sm:flex-row gap-4 pt-4"
                 >
                     <Link href="/lobby" onClick={() => trackLandingCTA("kill_the_scroll")}>
-                        <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white font-bold text-base px-8 py-6 rounded-full uppercase tracking-wider shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-105">
+                        <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white font-black text-base px-8 py-6 rounded-full uppercase tracking-tighter italic shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-105">
                             Start Swiping <ArrowDown className="ml-2 h-4 w-4 -rotate-90" />
                         </Button>
                     </Link>
