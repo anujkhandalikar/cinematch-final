@@ -196,6 +196,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         const t2 = setTimeout(() => setCountdown(1), 2000)
         const t3 = setTimeout(async () => {
             setCountdown(0)
+
+            const seed = roomSeed.current
+            if (seed) {
+                const { data: parts } = await supabase
+                    .from("participants")
+                    .select("*")
+                    .eq("room_id", code)
+                    .order("joined_at", { ascending: true })
+                if (parts) {
+                    await buildDeck(parts.map(normalizeParticipant), seed)
+                }
+            }
+
             setStatus("active")
             await supabase
                 .from("rooms")
