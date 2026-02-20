@@ -41,7 +41,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const otherRightSwipesRef = useRef<Set<string>>(new Set())
     const [mutualMatches, setMutualMatches] = useState<string[]>([])
     const [showNudge, setShowNudge] = useState(false)
-    const nudgeShownRef = useRef(false)
+    const [showPauseOverlay, setShowPauseOverlay] = useState(false)
+    const lastNudgeThresholdRef = useRef(0)
     const navigatingRef = useRef(false)
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
     const channelRef = useRef<RealtimeChannel | null>(null)
@@ -107,9 +108,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
         const mutual = await fetchMutualMatches()
 
-        if (nudgeShownRef.current) return
-        if (mutual.length >= NUDGE_THRESHOLD) {
-            nudgeShownRef.current = true
+        const nextThreshold = lastNudgeThresholdRef.current + NUDGE_THRESHOLD
+        if (mutual.length >= nextThreshold) {
+            lastNudgeThresholdRef.current = nextThreshold
             await supabase.from("rooms").update({ status: "paused" }).eq("id", code)
             channelRef.current?.send({
                 type: "broadcast",
@@ -229,8 +230,12 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 }
 
                 if (room.status === "paused" && room.created_by === user.id) {
-                    nudgeShownRef.current = true
+                    // Set threshold to current mutual count so next nudge triggers at +3
+                    const mutualCount = [...myRightSwipesRef.current].filter(id => otherRightSwipesRef.current.has(id)).length
+                    lastNudgeThresholdRef.current = Math.floor(mutualCount / NUDGE_THRESHOLD) * NUDGE_THRESHOLD
                     setShowNudge(true)
+                } else if (room.status === "paused") {
+                    setShowPauseOverlay(true)
                 }
             }
 
@@ -245,12 +250,15 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     const msg = payload.payload as { status: string; matchCount?: number }
                     if (msg.status === "paused") {
                         setStatus("paused")
+                        setShowPauseOverlay(true)
                         if (msg.matchCount) setMutualMatches(prev => prev.length >= (msg.matchCount ?? 0) ? prev : Array(msg.matchCount ?? 0).fill(""))
                         fetchMutualMatches()
                     } else if (msg.status === "active") {
                         setStatus("active")
+                        setShowPauseOverlay(false)
                     } else if (msg.status === "finished") {
                         setStatus("finished")
+                        setShowPauseOverlay(false)
                         finishAndNavigate()
                     }
                 })
@@ -273,7 +281,15 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                 await buildDeck(parts.map(normalizeParticipant), seed)
                             }
                         }
+                        if (newStatus === "paused") {
+                            setShowPauseOverlay(true)
+                            fetchMutualMatches()
+                        }
+                        if (newStatus === "active") {
+                            setShowPauseOverlay(false)
+                        }
                         if (newStatus === "finished") {
+                            setShowPauseOverlay(false)
                             finishAndNavigate()
                         }
                     }
@@ -412,9 +428,16 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         return () => clearInterval(poll)
     }, [status, checkNudge])
 
+    // Safety net: sync showPauseOverlay from status changes for non-host
     useEffect(() => {
-        if (status === "paused" && createdBy.current !== userIdRef.current) {
+        if (createdBy.current === userIdRef.current) return // host uses NudgeOverlay, not PauseOverlay
+        if (status === "paused") {
+            setShowPauseOverlay(true)
             fetchMutualMatches()
+        } else if (status === "active") {
+            setShowPauseOverlay(false)
+        } else if (status === "finished") {
+            setShowPauseOverlay(false)
         }
     }, [status, fetchMutualMatches])
 
@@ -434,7 +457,12 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 finishAndNavigate()
             } else if (dbStatus !== status) {
                 setStatus(dbStatus)
-                if (dbStatus === "paused") fetchMutualMatches()
+                if (dbStatus === "paused") {
+                    setShowPauseOverlay(true)
+                    fetchMutualMatches()
+                } else {
+                    setShowPauseOverlay(false)
+                }
             }
         }, 1000)
         return () => clearInterval(poll)
@@ -593,11 +621,10 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                             {player1.user_id === userId ? (
                                                 <button
                                                     onClick={toggleReady}
-                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                                                        player1.is_ready
-                                                            ? "bg-green-600/20 border-green-600/40 text-green-400"
-                                                            : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500"
-                                                    }`}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${player1.is_ready
+                                                        ? "bg-green-600/20 border-green-600/40 text-green-400"
+                                                        : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                                                        }`}
                                                 >
                                                     {player1.is_ready ? "Ready" : "Click Ready"}
                                                 </button>
@@ -606,11 +633,10 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                                                         {player1.is_ready ? "Ready" : "Not Ready"}
                                                     </span>
-                                                    <span className={`flex h-2.5 w-2.5 rounded-full ${
-                                                        player1.is_ready
-                                                            ? "bg-green-500 shadow-[0_0_10px_2px_rgba(34,197,94,0.4)]"
-                                                            : "bg-zinc-600"
-                                                    }`}></span>
+                                                    <span className={`flex h-2.5 w-2.5 rounded-full ${player1.is_ready
+                                                        ? "bg-green-500 shadow-[0_0_10px_2px_rgba(34,197,94,0.4)]"
+                                                        : "bg-zinc-600"
+                                                        }`}></span>
                                                 </>
                                             )}
                                         </div>
@@ -643,11 +669,10 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                             {player2.user_id === userId ? (
                                                 <button
                                                     onClick={toggleReady}
-                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${
-                                                        player2.is_ready
-                                                            ? "bg-green-600/20 border-green-600/40 text-green-400"
-                                                            : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500"
-                                                    }`}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all ${player2.is_ready
+                                                        ? "bg-green-600/20 border-green-600/40 text-green-400"
+                                                        : "bg-zinc-800 border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                                                        }`}
                                                 >
                                                     {player2.is_ready ? "Ready" : "Click Ready"}
                                                 </button>
@@ -656,11 +681,10 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                                     <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                                                         {player2.is_ready ? "Ready" : "Not Ready"}
                                                     </span>
-                                                    <span className={`flex h-2.5 w-2.5 rounded-full ${
-                                                        player2.is_ready
-                                                            ? "bg-green-500 shadow-[0_0_10px_2px_rgba(34,197,94,0.4)]"
-                                                            : "bg-zinc-600"
-                                                    }`}></span>
+                                                    <span className={`flex h-2.5 w-2.5 rounded-full ${player2.is_ready
+                                                        ? "bg-green-500 shadow-[0_0_10px_2px_rgba(34,197,94,0.4)]"
+                                                        : "bg-zinc-600"
+                                                        }`}></span>
                                                 </>
                                             )}
                                         </div>
@@ -681,11 +705,10 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                         </div>
 
                         {/* Auto-start indicator */}
-                        <div className={`w-full h-16 flex items-center justify-center rounded-full text-lg font-bold uppercase tracking-wider transition-all ${
-                            countdown !== null
-                                ? "bg-red-600 text-white shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] animate-pulse"
-                                : "bg-zinc-800 text-zinc-500"
-                        }`}>
+                        <div className={`w-full h-16 flex items-center justify-center rounded-full text-lg font-bold uppercase tracking-wider transition-all ${countdown !== null
+                            ? "bg-red-600 text-white shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] animate-pulse"
+                            : "bg-zinc-800 text-zinc-500"
+                            }`}>
                             <Play className="w-5 h-5 mr-2 fill-current" />
                             {countdown !== null
                                 ? `Starting in ${countdown}...`
@@ -748,7 +771,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     />
                 )}
 
-                {!isHost && <PauseOverlay show={status === "paused"} matchCount={mutualMatches.length} />}
+                {!isHost && <PauseOverlay show={showPauseOverlay} matchCount={mutualMatches.length} />}
             </div>
         )
     }

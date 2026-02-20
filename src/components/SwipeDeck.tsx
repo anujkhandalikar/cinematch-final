@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Movie } from "@/lib/movies"
 import { MovieCard } from "./MovieCard"
 import { AnimatePresence } from "framer-motion"
@@ -15,6 +15,13 @@ interface SwipeDeckProps {
 export function SwipeDeck({ movies, onSwipe, onEmpty, disabled }: SwipeDeckProps) {
     const [activeMovies, setActiveMovies] = useState(movies)
     const [history, setHistory] = useState<Movie[]>([]) // For potential Undo feature later
+
+    // Sync activeMovies when the movies prop changes (e.g. async load for non-host)
+    useEffect(() => {
+        if (movies.length > 0 && activeMovies.length === 0) {
+            setActiveMovies(movies)
+        }
+    }, [movies])
 
     const handleSwipe = (direction: "left" | "right") => {
         if (activeMovies.length === 0) return
