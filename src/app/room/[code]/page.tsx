@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { Button } from "@/components/ui/button"
-import { fetchMovies, Movie } from "@/lib/movies"
+import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
 import { toast } from "sonner"
 import { Users, Play, Clock, Share2, Copy, Check, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
@@ -67,9 +67,11 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
             if (joinError) console.error("Join error:", joinError)
 
-            // 4. Fetch Movies (Pre-fetch for smooth start)
-            const movieList = await fetchMovies()
-            setMovies(movieList)
+            // 4. Load mood-filtered movies
+            const mood = sessionStorage.getItem("selected_mood") as Mood | null
+            if (mood) {
+                setMovies(getMoviesByMood(mood))
+            }
 
             // 5. Initial Participant Fetch
             fetchParticipants()

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { MOVIES } from "@/lib/movies"
+import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
 import { Progress } from "@/components/ui/progress"
@@ -16,7 +16,7 @@ const shuffle = <T,>(array: T[]): T[] => {
 
 export default function SoloPage() {
     const router = useRouter()
-    const [movies, setMovies] = useState(() => shuffle(MOVIES))
+    const [movies, setMovies] = useState<Movie[]>([])
     const [timeLeft, setTimeLeft] = useState(180) // 3 minutes
     const [likedMovies, setLikedMovies] = useState<string[]>([])
     const [showNudge, setShowNudge] = useState(false)
@@ -27,6 +27,17 @@ export default function SoloPage() {
     // Ref to always have the latest likedMovies (avoids stale closure in timer)
     const likedMoviesRef = useRef(likedMovies)
     likedMoviesRef.current = likedMovies
+
+    // Load mood-filtered movies on mount
+    useEffect(() => {
+        const mood = sessionStorage.getItem("selected_mood") as Mood | null
+        if (mood) {
+            setMovies(shuffle(getMoviesByMood(mood)))
+        } else {
+            // Fallback: if no mood selected, redirect back
+            router.push("/mood")
+        }
+    }, [router])
 
     const finishSession = useCallback(() => {
         sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
@@ -79,6 +90,15 @@ export default function SoloPage() {
         const m = Math.floor(seconds / 60)
         const s = seconds % 60
         return `${m}:${s.toString().padStart(2, "0")}`
+    }
+
+    // Wait until movies are loaded
+    if (movies.length === 0) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-black text-white dot-pattern">
+                <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+        )
     }
 
     return (

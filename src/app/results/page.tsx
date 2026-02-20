@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Movie, MOVIES } from "@/lib/movies"
+import { type Movie, MOVIES } from "@/lib/movies"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 
