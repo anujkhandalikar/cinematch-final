@@ -18,7 +18,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased text-foreground bg-background`}>
         <SiteHeader />
-        {children}
+        <main className="pt-20">{children}</main>
         <Toaster />
       </body>
     </html>
