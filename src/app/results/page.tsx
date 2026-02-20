@@ -7,20 +7,25 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 
 import Image from "next/image"
-import { Home, Share2 } from "lucide-react"
+import { Home } from "lucide-react"
 
 export default function ResultsPage() {
     const router = useRouter()
     const [likes, setLikes] = useState<Movie[]>([])
     const [selectedId, setSelectedId] = useState<string | null>(null)
+    const [isDuo, setIsDuo] = useState(false)
 
     useEffect(() => {
-        const saved = sessionStorage.getItem("solo_results")
+        const duoResults = sessionStorage.getItem("duo_results")
+        const soloResults = sessionStorage.getItem("solo_results")
+        const saved = duoResults || soloResults
+
+        if (duoResults) setIsDuo(true)
+
         if (saved) {
             const likedIds = JSON.parse(saved) as string[]
             getMoviesByIds(likedIds).then((likedMovies) => {
                 setLikes(likedMovies)
-                // Pre-select the first liked movie
                 if (likedMovies.length > 0) {
                     setSelectedId(likedMovies[0].id)
                 }
@@ -38,9 +43,9 @@ export default function ResultsPage() {
                         <span className="flex h-2 w-2 rounded-full bg-red-600 mr-2 animate-pulse"></span>
                         Mission Accomplished
                     </span>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter leading-none">Your <span className="text-red-600">Shortlist</span></h1>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter leading-none">{isDuo ? "Mutual" : "Your"} <span className="text-red-600">Shortlist</span></h1>
                     <p className="text-zinc-500 font-medium text-lg">
-                        You liked <span className="text-white font-bold">{likes.length}</span> movies.
+                        {isDuo ? "You both liked" : "You liked"} <span className="text-white font-bold">{likes.length}</span> {likes.length === 1 ? "movie" : "movies"}.
                     </p>
                 </header>
 
@@ -131,19 +136,13 @@ export default function ResultsPage() {
                 </div>
 
                 <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black to-transparent z-20">
-                    <div className="max-w-3xl mx-auto flex gap-4">
+                    <div className="max-w-3xl mx-auto">
                         <Button
-                            className="flex-1 h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
+                            className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
                             variant="outline"
                             onClick={() => router.push("/")}
                         >
                             <Home className="w-5 h-5 mr-2" /> Home
-                        </Button>
-                        <Button
-                            className="flex-1 h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all"
-                            onClick={() => alert("Sharing not implemented in MVP")}
-                        >
-                            <Share2 className="w-5 h-5 mr-2" /> Share List
                         </Button>
                     </div>
                 </div>

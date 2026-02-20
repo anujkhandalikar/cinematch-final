@@ -15,18 +15,21 @@ export interface Database {
                     created_at: string
                     status: 'waiting' | 'active' | 'finished'
                     mode: 'solo' | 'dual'
+                    seed: string | null
                 }
                 Insert: {
                     code: string
                     created_at?: string
                     status?: 'waiting' | 'active' | 'finished'
                     mode?: 'solo' | 'dual'
+                    seed?: string
                 }
                 Update: {
                     code?: string
                     created_at?: string
                     status?: 'waiting' | 'active' | 'finished'
                     mode?: 'solo' | 'dual'
+                    seed?: string
                 }
             }
             participants: {
@@ -35,18 +38,21 @@ export interface Database {
                     room_code: string
                     user_id: string
                     last_seen: string
+                    mood: string | null
                 }
                 Insert: {
                     id?: string
                     room_code: string
                     user_id: string
                     last_seen?: string
+                    mood?: string
                 }
                 Update: {
                     id?: string
                     room_code?: string
                     user_id?: string
                     last_seen?: string
+                    mood?: string
                 }
             }
             swipes: {
