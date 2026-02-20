@@ -8,6 +8,7 @@ import { NudgeOverlay } from "@/components/NudgeOverlay"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock } from "lucide-react"
+import { trackSessionStart, trackSessionComplete, trackSwipe, trackNudgeShown, trackNavBack } from "@/lib/analytics"
 
 // Shuffle helper
 const shuffle = <T,>(array: T[]): T[] => {
@@ -17,12 +18,15 @@ const shuffle = <T,>(array: T[]): T[] => {
 export default function SoloPage() {
     const router = useRouter()
     const [movies, setMovies] = useState<Movie[]>([])
+    const [selectedOtt, setSelectedOtt] = useState<string[]>([])
     const [timeLeft, setTimeLeft] = useState(180) // 3 minutes
     const [likedMovies, setLikedMovies] = useState<string[]>([])
     const [showNudge, setShowNudge] = useState(false)
-    const [nudgeDismissed, setNudgeDismissed] = useState(false)
+    const lastNudgeThresholdRef = useRef(0)
 
     const NUDGE_THRESHOLD = 3
+    const swipeIndexRef = useRef(0)
+    const [swipedCount, setSwipedCount] = useState(0)
 
     // Ref to always have the latest likedMovies (avoids stale closure in timer)
     const likedMoviesRef = useRef(likedMovies)
@@ -32,28 +36,33 @@ export default function SoloPage() {
     useEffect(() => {
         const mood = sessionStorage.getItem("selected_mood") as Mood | null
         if (mood) {
-            getMoviesByMood(mood).then((allMovies) => {
-                // Apply OTT filter if set
+            getMoviesByMood(mood).then((allMovies: Movie[]) => {
                 const ottJson = sessionStorage.getItem("selected_ott")
-                let filtered = allMovies
+                let ottPlatforms: string[] = []
 
                 if (ottJson) {
                     try {
-                        const selectedOtt = JSON.parse(ottJson) as string[]
-                        if (selectedOtt.length > 0) {
-                            filtered = allMovies.filter((m) => {
-                                // Keep movies with no OTT data (empty/null) so we don't hide content
-                                if (!m.ott_providers || m.ott_providers.length === 0) return true
-                                // Keep if the movie is on ANY of the selected platforms (OR logic)
-                                return m.ott_providers.some((p) => selectedOtt.includes(p))
-                            })
-                        }
-                    } catch {
-                        // Invalid JSON, ignore
-                    }
+                        ottPlatforms = JSON.parse(ottJson) as string[]
+                    } catch { /* ignore */ }
                 }
 
-                setMovies(shuffle(filtered))
+                setSelectedOtt(ottPlatforms)
+
+                let ordered: Movie[]
+                if (ottPlatforms.length > 0) {
+                    const matched = allMovies.filter((m) =>
+                        m.ott_providers?.some((p) => ottPlatforms.includes(p))
+                    )
+                    const rest = allMovies.filter((m) =>
+                        !m.ott_providers?.some((p) => ottPlatforms.includes(p))
+                    )
+                    ordered = [...shuffle(matched), ...shuffle(rest)]
+                } else {
+                    ordered = shuffle(allMovies)
+                }
+
+                setMovies(ordered)
+                trackSessionStart({ mode: "solo", mood, ott_count: ottPlatforms.length, movie_count: ordered.length })
             })
         } else {
             // Fallback: if no mood selected, redirect back
@@ -61,19 +70,29 @@ export default function SoloPage() {
         }
     }, [router])
 
-    const finishSession = useCallback(() => {
+    const finishSession = useCallback((completion: "manual" | "timer" | "deck_empty" = "manual") => {
+        trackSessionComplete({
+            mode: "solo",
+            liked_count: likedMoviesRef.current.length,
+            time_remaining: timeLeft,
+            completion,
+        })
         sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
         router.push("/results")
-    }, [router])
+    }, [router, timeLeft])
 
     useEffect(() => {
         const timer = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer)
-                    // Force-close nudge overlay if open
                     setShowNudge(false)
-                    // Use ref to get latest liked movies
+                    trackSessionComplete({
+                        mode: "solo",
+                        liked_count: likedMoviesRef.current.length,
+                        time_remaining: 0,
+                        completion: "timer",
+                    })
                     sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
                     router.push("/results")
                     return 0
@@ -86,11 +105,24 @@ export default function SoloPage() {
     }, [router])
 
     const handleSwipe = (movieId: string, direction: "left" | "right") => {
+        const currentMovie = movies.find(m => m.id === movieId)
+        trackSwipe({
+            direction,
+            movie_id: movieId,
+            movie_title: currentMovie?.title ?? "",
+            position: swipeIndexRef.current,
+            mode: "solo",
+        })
+        swipeIndexRef.current += 1
+        setSwipedCount(prev => prev + 1)
+
         if (direction === "right") {
             setLikedMovies((prev) => {
                 const updated = [...prev, movieId]
-                // Trigger nudge when reaching threshold for the first time
-                if (updated.length >= NUDGE_THRESHOLD && !nudgeDismissed) {
+                const nextThreshold = lastNudgeThresholdRef.current + NUDGE_THRESHOLD
+                if (updated.length >= nextThreshold) {
+                    lastNudgeThresholdRef.current = nextThreshold
+                    trackNudgeShown(updated.length, "solo")
                     setShowNudge(true)
                 }
                 return updated
@@ -100,7 +132,6 @@ export default function SoloPage() {
 
     const handleNudgeContinue = () => {
         setShowNudge(false)
-        setNudgeDismissed(true)
     }
 
     const handleNudgeCheckShortlist = () => {
@@ -129,7 +160,7 @@ export default function SoloPage() {
 
             <header className="w-full grid grid-cols-3 items-center mb-4 z-10 max-w-md mx-auto pt-4 relative">
                 <div className="flex justify-start">
-                    <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
+                    <Button variant="ghost" size="icon" onClick={() => { trackNavBack("solo"); router.push("/"); }} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
                         <ArrowLeft className="w-6 h-6" />
                     </Button>
                 </div>
@@ -146,18 +177,19 @@ export default function SoloPage() {
                 </div>
             </header>
 
-            <div className="flex-1 w-full flex items-center justify-center relative z-10">
+            <div className={`flex-1 w-full flex items-center justify-center relative z-10 ${showNudge ? "pointer-events-none" : ""}`}>
                 <SwipeDeck
                     movies={movies}
                     onSwipe={handleSwipe}
-                    onEmpty={finishSession}
+                    onEmpty={() => finishSession("deck_empty")}
+                    selectedOtt={selectedOtt}
                 />
             </div>
 
             <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
                     <span>{likedMovies.length} liked</span>
-                    <span>{movies.length} remaining</span>
+                    <span>{movies.length - swipedCount} remaining</span>
                 </div>
                 {/* Custom Progress Bar since Shadcn Progress might be too simple */}
                 <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
@@ -169,7 +201,7 @@ export default function SoloPage() {
 
                 <Button
                     className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold uppercase tracking-wider rounded-full transition-all"
-                    onClick={finishSession}
+                    onClick={() => finishSession("manual")}
                 >
                     Review Shortlist ({likedMovies.length})
                 </Button>

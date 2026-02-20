@@ -8,6 +8,7 @@ import { motion } from "framer-motion"
 
 import Image from "next/image"
 import { Home } from "lucide-react"
+import { trackResultsViewed, trackResultMovieClick, trackResultsHome, trackResultsStartOver } from "@/lib/analytics"
 
 export default function ResultsPage() {
     const router = useRouter()
@@ -19,6 +20,7 @@ export default function ResultsPage() {
         const duoResults = sessionStorage.getItem("duo_results")
         const soloResults = sessionStorage.getItem("solo_results")
         const saved = duoResults || soloResults
+        const mode = duoResults ? "dual" : "solo"
 
         if (duoResults) setIsDuo(true)
 
@@ -26,10 +28,13 @@ export default function ResultsPage() {
             const likedIds = JSON.parse(saved) as string[]
             getMoviesByIds(likedIds).then((likedMovies) => {
                 setLikes(likedMovies)
+                trackResultsViewed(mode, likedMovies.length)
                 if (likedMovies.length > 0) {
                     setSelectedId(likedMovies[0].id)
                 }
             })
+        } else {
+            trackResultsViewed(mode, 0)
         }
     }, [])
 
@@ -54,7 +59,7 @@ export default function ResultsPage() {
                         <div className="text-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20 space-y-6">
                             <p className="text-zinc-500 font-medium">No movies liked. Tough crowd!</p>
                             <Button
-                                onClick={() => router.push("/")}
+                                onClick={() => { trackResultsStartOver(); router.push("/"); }}
                                 className="h-12 px-8 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02]"
                             >
                                 Start Over
@@ -68,7 +73,7 @@ export default function ResultsPage() {
                                     <motion.div
                                         key={movie.id}
                                         layout
-                                        onClick={() => setSelectedId(movie.id)}
+                                        onClick={() => { trackResultMovieClick(movie.id, movie.title); setSelectedId(movie.id); }}
                                         className="relative cursor-pointer rounded-2xl overflow-hidden group"
                                         animate={{
                                             scale: isSelected ? 1.0 : 0.95,
@@ -151,7 +156,7 @@ export default function ResultsPage() {
                         <Button
                             className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
                             variant="outline"
-                            onClick={() => router.push("/")}
+                            onClick={() => { trackResultsHome(likes.length); router.push("/"); }}
                         >
                             <Home className="w-5 h-5 mr-2" /> Home
                         </Button>

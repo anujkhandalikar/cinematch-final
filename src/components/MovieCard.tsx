@@ -6,15 +6,17 @@ import { Movie } from "@/lib/movies"
 import { useState } from "react"
 import { X, Heart } from "lucide-react"
 import { SynopsisOverlay } from "./SynopsisOverlay"
+import { trackSynopsisOpen, trackSynopsisClose } from "@/lib/analytics"
 
 interface MovieCardProps {
     movie: Movie
     onSwipe: (direction: "left" | "right") => void
     index: number
     disabled?: boolean
+    selectedOtt?: string[]
 }
 
-export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
+export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: MovieCardProps) {
     const [exitX, setExitX] = useState<number | null>(null)
     const [synopsisOpen, setSynopsisOpen] = useState(false)
     const x = useMotionValue(0)
@@ -39,6 +41,7 @@ export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
     const handleSynopsisTap = (e: React.MouseEvent | React.TouchEvent) => {
         e.stopPropagation()
         e.preventDefault()
+        trackSynopsisOpen(movie.id, movie.title)
         setSynopsisOpen(true)
     }
 
@@ -131,11 +134,21 @@ export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
                         {/* OTT Providers */}
                         {movie.ott_providers && movie.ott_providers.length > 0 && (
                             <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                                {movie.ott_providers.map((provider, i) => (
-                                    <span key={i} className="bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10">
-                                        {provider}
-                                    </span>
-                                ))}
+                                {movie.ott_providers.map((provider, i) => {
+                                    const isMatch = selectedOtt?.includes(provider)
+                                    return (
+                                        <span
+                                            key={i}
+                                            className={
+                                                isMatch
+                                                    ? "bg-red-600/90 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full border border-red-500/50 shadow-[0_0_8px_-2px_rgba(220,38,38,0.5)]"
+                                                    : "bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10"
+                                            }
+                                        >
+                                            {isMatch ? `✓ ${provider}` : provider}
+                                        </span>
+                                    )
+                                })}
                             </div>
                         )}
 
@@ -158,7 +171,7 @@ export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
                 <SynopsisOverlay
                     movie={movie}
                     isOpen={synopsisOpen}
-                    onClose={() => setSynopsisOpen(false)}
+                    onClose={() => { trackSynopsisClose(movie.id); setSynopsisOpen(false); }}
                 />
             )}
         </>

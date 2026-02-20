@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getAvailableProviders, type Mood } from "@/lib/movies"
+import { trackMoodSelected, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack } from "@/lib/analytics"
 
 const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNode; gradient: string }[] = [
     {
@@ -75,17 +76,19 @@ export default function MoodPage() {
 
     const handleMoodSelect = (mood: Mood) => {
         if (selectedMood === mood) {
-            // Deselect
             setSelectedMood(null)
             setAvailableProviders([])
             setSelectedProviders([])
             return
         }
         setSelectedMood(mood)
+        trackMoodSelected(mood)
         sessionStorage.setItem("selected_mood", mood)
     }
 
     const toggleProvider = (provider: string) => {
+        const willBeSelected = !selectedProviders.includes(provider)
+        trackOttToggled(provider, willBeSelected)
         setSelectedProviders((prev) =>
             prev.includes(provider)
                 ? prev.filter((p) => p !== provider)
@@ -95,8 +98,10 @@ export default function MoodPage() {
 
     const handleContinue = () => {
         if (selectedProviders.length > 0) {
+            trackOttSelected(selectedProviders)
             sessionStorage.setItem("selected_ott", JSON.stringify(selectedProviders))
         } else {
+            trackOttSkipped()
             sessionStorage.removeItem("selected_ott")
         }
 
@@ -109,6 +114,7 @@ export default function MoodPage() {
     }
 
     const handleSkip = () => {
+        trackOttSkipped()
         sessionStorage.removeItem("selected_ott")
         const mode = sessionStorage.getItem("selected_mode")
         if (mode === "dual") {
@@ -138,7 +144,7 @@ export default function MoodPage() {
                 <div className="bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
                     <div className="space-y-6">
                         <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => router.push("/lobby")} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                            <Button variant="ghost" size="icon" onClick={() => { trackNavBack("mood"); router.push("/lobby"); }} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                             <div className="space-y-1">

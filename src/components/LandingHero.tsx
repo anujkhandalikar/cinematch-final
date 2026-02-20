@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Flame, Skull, Users, Clock, Play } from 'lucide-react';
+import { trackLandingCTA } from '@/lib/analytics';
 
 export default function LandingHero() {
     return (
@@ -55,12 +56,12 @@ export default function LandingHero() {
                     transition={{ duration: 0.5, delay: 0.3 }}
                     className="flex flex-col sm:flex-row gap-4 pt-4"
                 >
-                    <Link href="/lobby">
+                    <Link href="/lobby" onClick={() => trackLandingCTA("kill_the_scroll")}>
                         <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white font-bold text-base px-8 py-6 rounded-full uppercase tracking-wider shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-105">
                             Kill The Scroll <ArrowDown className="ml-2 h-4 w-4 -rotate-90" />
                         </Button>
                     </Link>
-                    <Link href="#how-it-works">
+                    <Link href="#how-it-works" onClick={() => trackLandingCTA("how_it_works")}>
                         <Button variant="outline" size="lg" className="border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-900 hover:text-white font-bold text-base px-8 py-6 rounded-full uppercase tracking-wider">
                             How it works <ArrowDown className="ml-2 h-4 w-4" />
                         </Button>
