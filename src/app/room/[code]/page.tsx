@@ -39,6 +39,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const [participants, setParticipants] = useState<Participant[]>([])
     const [userId, setUserId] = useState<string>("")
     const [movies, setMovies] = useState<Movie[]>([])
+    const [selectedOtt, setSelectedOtt] = useState<string[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [copied, setCopied] = useState(false)
     const [timeLeft, setTimeLeft] = useState(180)
@@ -88,28 +89,27 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
         const pool = await getMoviesByMoods(moods)
 
-        // Apply OTT filter if set
         const ottJson = sessionStorage.getItem("selected_ott")
-        let filtered = pool
-
+        let ottPlatforms: string[] = []
         if (ottJson) {
-            try {
-                const selectedOtt = JSON.parse(ottJson) as string[]
-                if (selectedOtt.length > 0) {
-                    filtered = pool.filter((m) => {
-                        // Keep movies with no OTT data (empty/null) so we don't hide content
-                        if (!m.ott_providers || m.ott_providers.length === 0) return true
-                        // Keep if the movie is on ANY of the selected platforms (OR logic)
-                        return m.ott_providers.some((p) => selectedOtt.includes(p))
-                    })
-                }
-            } catch {
-                // Invalid JSON, ignore
-            }
+            try { ottPlatforms = JSON.parse(ottJson) as string[] } catch { /* ignore */ }
+        }
+        setSelectedOtt(ottPlatforms)
+
+        let ordered: Movie[]
+        if (ottPlatforms.length > 0) {
+            const matched = pool.filter((m) =>
+                m.ott_providers?.some((p) => ottPlatforms.includes(p))
+            )
+            const rest = pool.filter((m) =>
+                !m.ott_providers?.some((p) => ottPlatforms.includes(p))
+            )
+            ordered = [...shuffleWithSeed(matched, seed), ...shuffleWithSeed(rest, seed)]
+        } else {
+            ordered = shuffleWithSeed(pool, seed)
         }
 
-        const shuffled = shuffleWithSeed(filtered, seed)
-        setMovies(shuffled)
+        setMovies(ordered)
     }, [])
 
     const fetchMutualMatches = useCallback(async () => {
@@ -798,6 +798,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                         onSwipe={handleSwipe}
                         onEmpty={handleEmpty}
                         disabled={status === "paused"}
+                        selectedOtt={selectedOtt}
                     />
                 </div>
 

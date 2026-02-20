@@ -18,6 +18,7 @@ const shuffle = <T,>(array: T[]): T[] => {
 export default function SoloPage() {
     const router = useRouter()
     const [movies, setMovies] = useState<Movie[]>([])
+    const [selectedOtt, setSelectedOtt] = useState<string[]>([])
     const [timeLeft, setTimeLeft] = useState(180) // 3 minutes
     const [likedMovies, setLikedMovies] = useState<string[]>([])
     const [showNudge, setShowNudge] = useState(false)
@@ -25,6 +26,7 @@ export default function SoloPage() {
 
     const NUDGE_THRESHOLD = 3
     const swipeIndexRef = useRef(0)
+    const [swipedCount, setSwipedCount] = useState(0)
 
     // Ref to always have the latest likedMovies (avoids stale closure in timer)
     const likedMoviesRef = useRef(likedMovies)
@@ -35,31 +37,32 @@ export default function SoloPage() {
         const mood = sessionStorage.getItem("selected_mood") as Mood | null
         if (mood) {
             getMoviesByMood(mood).then((allMovies: Movie[]) => {
-                // Apply OTT filter if set
                 const ottJson = sessionStorage.getItem("selected_ott")
-                let filtered = allMovies
+                let ottPlatforms: string[] = []
 
                 if (ottJson) {
                     try {
-                        const selectedOtt = JSON.parse(ottJson) as string[]
-                        if (selectedOtt.length > 0) {
-                            filtered = allMovies.filter((m) => {
-                                // Keep movies with no OTT data (empty/null) so we don't hide content
-                                if (!m.ott_providers || m.ott_providers.length === 0) return true
-                                // Keep if the movie is on ANY of the selected platforms (OR logic)
-                                return m.ott_providers.some((p) => selectedOtt.includes(p))
-                            })
-                        }
-                    } catch {
-                        // Invalid JSON, ignore
-                    }
+                        ottPlatforms = JSON.parse(ottJson) as string[]
+                    } catch { /* ignore */ }
                 }
 
-                const shuffled = shuffle(filtered)
-                setMovies(shuffled)
-                const ottRaw = sessionStorage.getItem("selected_ott")
-                const ottCount = ottRaw ? (JSON.parse(ottRaw) as string[]).length : 0
-                trackSessionStart({ mode: "solo", mood, ott_count: ottCount, movie_count: shuffled.length })
+                setSelectedOtt(ottPlatforms)
+
+                let ordered: Movie[]
+                if (ottPlatforms.length > 0) {
+                    const matched = allMovies.filter((m) =>
+                        m.ott_providers?.some((p) => ottPlatforms.includes(p))
+                    )
+                    const rest = allMovies.filter((m) =>
+                        !m.ott_providers?.some((p) => ottPlatforms.includes(p))
+                    )
+                    ordered = [...shuffle(matched), ...shuffle(rest)]
+                } else {
+                    ordered = shuffle(allMovies)
+                }
+
+                setMovies(ordered)
+                trackSessionStart({ mode: "solo", mood, ott_count: ottPlatforms.length, movie_count: ordered.length })
             })
         } else {
             // Fallback: if no mood selected, redirect back
@@ -111,6 +114,7 @@ export default function SoloPage() {
             mode: "solo",
         })
         swipeIndexRef.current += 1
+        setSwipedCount(prev => prev + 1)
 
         if (direction === "right") {
             setLikedMovies((prev) => {
@@ -178,13 +182,14 @@ export default function SoloPage() {
                     movies={movies}
                     onSwipe={handleSwipe}
                     onEmpty={() => finishSession("deck_empty")}
+                    selectedOtt={selectedOtt}
                 />
             </div>
 
             <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
                     <span>{likedMovies.length} liked</span>
-                    <span>{movies.length} remaining</span>
+                    <span>{movies.length - swipedCount} remaining</span>
                 </div>
                 {/* Custom Progress Bar since Shadcn Progress might be too simple */}
                 <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
