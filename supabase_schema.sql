@@ -22,7 +22,8 @@ create table public.rooms (
   status text default 'waiting' check (status in ('waiting', 'active', 'finished')),
   mode text default 'dual' check (mode in ('solo', 'dual')),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  started_at timestamp with time zone -- For the timer sync
+  started_at timestamp with time zone, -- For the timer sync
+  seed text -- Shared random seed for deterministic deck shuffling in dual mode
 );
 
 -- 3. PARTICIPANTS TABLE (Users in a Room)
@@ -31,6 +32,7 @@ create table public.participants (
   room_id text references public.rooms(id) on delete cascade not null,
   user_id uuid references auth.users(id), -- Nullable for anonymous users if we go that route, but better to use auth.uid()
   is_ready boolean default false,
+  mood text, -- Player's selected mood for deck building
   joined_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(room_id, user_id)
 );

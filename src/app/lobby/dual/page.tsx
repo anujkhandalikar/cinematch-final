@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,7 @@ export default function DualLobbyPage() {
     const [joinCode, setJoinCode] = useState("")
     const [isCreating, setIsCreating] = useState(false)
     const [isCheckingAuth, setIsCheckingAuth] = useState(true)
-    const supabase = createClient()
+    const supabase = useMemo(() => createClient(), [])
 
     useEffect(() => {
         const ensureAuth = async () => {
@@ -38,6 +38,7 @@ export default function DualLobbyPage() {
     const handleCreateRoom = async () => {
         setIsCreating(true)
         const code = generateCode()
+        const seed = crypto.randomUUID()
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
@@ -52,7 +53,8 @@ export default function DualLobbyPage() {
                 id: code,
                 created_by: user.id,
                 status: 'waiting',
-                mode: 'dual'
+                mode: 'dual',
+                seed
             })
 
         if (error) {
@@ -62,13 +64,14 @@ export default function DualLobbyPage() {
             return
         }
 
-        const { error: participantError } = await supabase
-            .from('participants')
-            .insert({
-                room_id: code,
-                user_id: user.id,
-                is_ready: true
-            })
+        const mood = sessionStorage.getItem("selected_mood") || null
+
+        const { error: participantError } = await supabase.from('participants').insert({
+            room_id: code,
+            user_id: user.id,
+            is_ready: false,
+            ...(mood ? { mood } : {})
+        })
 
         if (participantError) {
             console.error("Participant error:", participantError)
@@ -106,13 +109,14 @@ export default function DualLobbyPage() {
             return
         }
 
-        const { error: joinError } = await supabase
-            .from('participants')
-            .insert({
-                room_id: room.id,
-                user_id: user.id,
-                is_ready: false
-            })
+        const mood = sessionStorage.getItem("selected_mood") || null
+
+        const { error: joinError } = await supabase.from('participants').insert({
+            room_id: room.id,
+            user_id: user.id,
+            is_ready: false,
+            ...(mood ? { mood } : {})
+        })
 
         if (joinError && joinError.code !== '23505') {
             console.error(joinError)
