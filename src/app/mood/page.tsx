@@ -49,13 +49,7 @@ export default function MoodPage() {
 
     const handleMoodSelect = (mood: Mood) => {
         sessionStorage.setItem("selected_mood", mood)
-        const mode = sessionStorage.getItem("selected_mode")
-
-        if (mode === "dual") {
-            router.push("/lobby/dual")
-        } else {
-            router.push("/solo")
-        }
+        router.push("/ott-filter")
     }
 
     return (

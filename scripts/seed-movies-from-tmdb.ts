@@ -17,6 +17,24 @@ import { createClient } from "@supabase/supabase-js"
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
 const POSTER_BASE = "https://image.tmdb.org/t/p/w500"
+const WATCH_REGION = "IN"
+
+// Major Indian OTT platforms whitelist
+const PROVIDER_WHITELIST = new Set([
+  "Netflix", "Amazon Prime Video", "Disney Plus", "Disney+ Hotstar", "Hotstar",
+  "JioCinema", "Jio Cinema", "Zee5", "ZEE5", "SonyLIV",
+  "Apple TV Plus", "Apple TV+", "MUBI", "Lionsgate Play",
+])
+
+function normalizeProvider(name: string): string {
+  const map: Record<string, string> = {
+    "Disney Plus": "Disney+ Hotstar", "Disney+ Hotstar": "Disney+ Hotstar",
+    Hotstar: "Disney+ Hotstar", "Apple TV Plus": "Apple TV+",
+    "Apple TV+": "Apple TV+", "Jio Cinema": "JioCinema",
+    JioCinema: "JioCinema", ZEE5: "Zee5", Zee5: "Zee5",
+  }
+  return map[name] ?? name
+}
 
 type Mood = "imdb_top" | "light_and_fun" | "bollywood" | "oscar" | "srk"
 
@@ -39,6 +57,7 @@ interface SupabaseMovieRow {
   overview: string
   imdb_rating: number
   mood: Mood
+  ott_providers: string[]
 }
 
 async function tmdbGet<T>(path: string, params: Record<string, string> = {}): Promise<T> {
@@ -73,6 +92,7 @@ function mapMovie(m: TMDBMovie, mood: Mood, genreMap: Map<number, string>): Supa
     overview: m.overview?.trim() || "No overview.",
     imdb_rating: Math.round(m.vote_average * 10) / 10,
     mood,
+    ott_providers: [], // Will be enriched later
   }
 }
 
@@ -202,6 +222,36 @@ async function main() {
     console.log("No movies to upsert.")
     return
   }
+
+  // Enrich with OTT providers
+  console.log(`\nFetching OTT providers for ${allRows.length} movies...`)
+  let enriched = 0
+  for (const row of allRows) {
+    const tmdbIdMatch = row.id.match(/_([\d]+)$/)
+    if (!tmdbIdMatch) continue
+    const tmdbId = parseInt(tmdbIdMatch[1], 10)
+    if (Number.isNaN(tmdbId)) continue
+
+    try {
+      const watchData = await tmdbGet<{ results: { [region: string]: { flatrate?: { provider_name: string }[] } } }>(
+        `/movie/${tmdbId}/watch/providers`
+      )
+      const regionData = watchData.results?.[WATCH_REGION]
+      if (regionData?.flatrate) {
+        const providers = regionData.flatrate
+          .map((p) => p.provider_name)
+          .filter((name) => PROVIDER_WHITELIST.has(name))
+          .map(normalizeProvider)
+        row.ott_providers = [...new Set(providers)]
+        if (row.ott_providers.length > 0) enriched++
+      }
+    } catch {
+      // Skip if API call fails
+    }
+    // Rate limit
+    await new Promise((r) => setTimeout(r, 300))
+  }
+  console.log(`  Enriched ${enriched} movies with OTT data.`)
 
   console.log(`Upserting ${allRows.length} movies into Supabase...`)
   const { error } = await supabase.from("movies").upsert(allRows, { onConflict: "id" })
