@@ -12,6 +12,16 @@ import { PauseOverlay } from "@/components/PauseOverlay"
 import { Users, Play, Clock, Share2, Copy, Check, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import type { RealtimeChannel } from "@supabase/supabase-js"
+import {
+    trackSessionStart,
+    trackSessionComplete,
+    trackSwipe,
+    trackNudgeShown,
+    trackRoomCodeCopied,
+    trackRoomShared,
+    trackPlayerReady,
+    trackMutualMatch,
+} from "@/lib/analytics"
 
 interface Participant {
     user_id: string
@@ -132,6 +142,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         const nextThreshold = lastNudgeThresholdRef.current + NUDGE_THRESHOLD
         if (mutual.length >= nextThreshold) {
             lastNudgeThresholdRef.current = nextThreshold
+            trackMutualMatch(code, mutual.length)
+            trackNudgeShown(mutual.length, "dual")
             await supabase.from("rooms").update({ status: "paused" }).eq("id", code)
             channelRef.current?.send({
                 type: "broadcast",
@@ -145,6 +157,13 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const finishAndNavigate = useCallback(async () => {
         if (navigatingRef.current) return
         navigatingRef.current = true
+
+        trackSessionComplete({
+            mode: "dual",
+            liked_count: myLikedCount,
+            time_remaining: timeLeft,
+            completion: timeLeft <= 0 ? "timer" : "manual",
+        })
 
         await supabase.from("rooms").update({ status: "finished" }).eq("id", code)
         channelRef.current?.send({
@@ -349,6 +368,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         const me = participants.find(p => p.user_id === userId)
         if (!me) return
         const newReady = !me.is_ready
+        trackPlayerReady(code, newReady)
 
         setParticipants(prev =>
             prev.map(p => p.user_id === userId ? { ...p, is_ready: newReady } : p)
@@ -402,6 +422,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             }
 
             setStatus("active")
+            trackSessionStart({ mode: "dual", room_code: code, movie_count: movies.length })
             await supabase
                 .from("rooms")
                 .update({ status: "active", started_at: new Date().toISOString() })
@@ -496,6 +517,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     }
 
     const handleCopy = () => {
+        trackRoomCodeCopied(code)
         navigator.clipboard.writeText(code)
         setCopied(true)
         toast.success("Room Code Copied!")
@@ -503,6 +525,14 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     }
 
     const handleSwipe = async (movieId: string, direction: "left" | "right") => {
+        const currentMovie = movies.find(m => m.id === movieId)
+        trackSwipe({
+            direction,
+            movie_id: movieId,
+            movie_title: currentMovie?.title ?? "",
+            position: swipedCount,
+            mode: "dual",
+        })
         setSwipedCount(prev => prev + 1)
 
         const { error } = await supabase.from("swipes").insert({
@@ -606,6 +636,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                 variant="outline"
                                 className="h-14 w-14 px-0 border-zinc-800 bg-transparent text-zinc-300 hover:bg-zinc-900 hover:text-white rounded-full transition-all"
                                 onClick={() => {
+                                    trackRoomShared(code)
                                     if (navigator.share) {
                                         navigator.share({
                                             title: 'Join my CineMatch Room',

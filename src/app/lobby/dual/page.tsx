@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, Users, Zap, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
+import { trackRoomCreated, trackRoomJoined, trackNavBack } from "@/lib/analytics"
 
 export default function DualLobbyPage() {
     const router = useRouter()
@@ -77,6 +78,7 @@ export default function DualLobbyPage() {
             console.error("Participant error:", participantError)
         }
 
+        trackRoomCreated(code)
         toast.success("Room created!")
         router.push(`/room/${code}`)
     }
@@ -124,6 +126,7 @@ export default function DualLobbyPage() {
             return
         }
 
+        trackRoomJoined(room.id)
         router.push(`/room/${room.id}`)
     }
 
@@ -155,7 +158,7 @@ export default function DualLobbyPage() {
                 <div className="bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
                     <div className="space-y-6">
                         <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => router.push("/mood")} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                            <Button variant="ghost" size="icon" onClick={() => { trackNavBack("dual_lobby"); router.push("/mood"); }} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                             <div className="space-y-1">

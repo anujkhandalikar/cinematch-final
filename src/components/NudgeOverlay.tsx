@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion"
 import { CheckCircle, ArrowRight, ListChecks } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { trackNudgeContinue, trackNudgeCheckShortlist } from "@/lib/analytics"
 
 interface NudgeOverlayProps {
     show: boolean
@@ -65,7 +66,7 @@ export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist }:
                             {/* Actions */}
                             <div className="space-y-3 pt-2">
                                 <Button
-                                    onClick={onCheckShortlist}
+                                    onClick={() => { trackNudgeCheckShortlist(likedCount); onCheckShortlist(); }}
                                     className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] hover:shadow-[0_0_35px_-5px_rgba(220,38,38,0.6)] transition-all hover:scale-[1.02]"
                                 >
                                     <ListChecks className="w-5 h-5 mr-2" />
@@ -73,7 +74,7 @@ export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist }:
                                 </Button>
 
                                 <Button
-                                    onClick={onContinue}
+                                    onClick={() => { trackNudgeContinue(likedCount); onContinue(); }}
                                     variant="outline"
                                     className="w-full h-14 bg-transparent border border-zinc-700 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
                                 >

@@ -6,6 +6,7 @@ import { Movie } from "@/lib/movies"
 import { useState } from "react"
 import { X, Heart } from "lucide-react"
 import { SynopsisOverlay } from "./SynopsisOverlay"
+import { trackSynopsisOpen, trackSynopsisClose } from "@/lib/analytics"
 
 interface MovieCardProps {
     movie: Movie
@@ -39,6 +40,7 @@ export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
     const handleSynopsisTap = (e: React.MouseEvent | React.TouchEvent) => {
         e.stopPropagation()
         e.preventDefault()
+        trackSynopsisOpen(movie.id, movie.title)
         setSynopsisOpen(true)
     }
 
@@ -158,7 +160,7 @@ export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
                 <SynopsisOverlay
                     movie={movie}
                     isOpen={synopsisOpen}
-                    onClose={() => setSynopsisOpen(false)}
+                    onClose={() => { trackSynopsisClose(movie.id); setSynopsisOpen(false); }}
                 />
             )}
         </>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Users, Play, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { trackModeSelected, trackNavBack } from "@/lib/analytics"
 
 export default function LobbyPage() {
     const router = useRouter()
@@ -12,6 +13,7 @@ export default function LobbyPage() {
 
     const handleModeSelect = (mode: "solo" | "dual") => {
         setIsNavigating(true)
+        trackModeSelected(mode)
         sessionStorage.setItem("selected_mode", mode)
         router.push("/mood")
     }
@@ -36,7 +38,7 @@ export default function LobbyPage() {
                 <div className="bg-zinc-900/40 border border-zinc-800/60 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
                     <div className="space-y-6">
                         <div className="flex items-center gap-4">
-                            <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                            <Button variant="ghost" size="icon" onClick={() => { trackNavBack("lobby"); router.push("/"); }} className="rounded-full w-10 h-10 hover:bg-zinc-800 text-zinc-400 hover:text-white">
                                 <ArrowLeft className="w-5 h-5" />
                             </Button>
                             <div className="space-y-1">
