@@ -71,22 +71,7 @@ export function SynopsisOverlay({ movie, isOpen, onClose }: SynopsisOverlayProps
                                 {movie.overview}
                             </p>
 
-                            {/* Divider */}
-                            <div className="w-full h-px bg-zinc-700/50 my-1" />
 
-                            {/* Top Cast */}
-                            <div className="space-y-3">
-                                <span className="text-zinc-500 text-xs font-bold uppercase tracking-[0.2em]">
-                                    Top Cast
-                                </span>
-                                <div className="flex flex-wrap gap-x-5 gap-y-2">
-                                    {movie.cast.map((actor, i) => (
-                                        <span key={i} className="text-white text-sm font-semibold">
-                                            {actor}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
 
                             {/* Spacer */}
                             <div className="h-8" />
