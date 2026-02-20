@@ -59,7 +59,7 @@ export default function MoodPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-4 bg-black text-white dot-pattern relative overflow-hidden">
+        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
             <motion.div
@@ -103,7 +103,7 @@ export default function MoodPage() {
                                     initial={{ opacity: 0, y: 15 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.15 + i * 0.08 }}
-                                    className={`group relative flex items-center md:flex-col md:justify-center md:py-6 md:px-4 p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b ${mood.gradient} border border-zinc-800 hover:border-zinc-600 hover:scale-[1.02] transition-all duration-300 text-left md:text-center w-full overflow-hidden`}
+                                    className={`group relative flex items-center md:flex-col md:justify-center md:py-12 md:px-4 md:aspect-[3/4] p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b ${mood.gradient} border border-zinc-800 hover:border-zinc-600 hover:scale-[1.02] transition-all duration-300 text-left md:text-center w-full overflow-hidden`}
                                     onClick={() => handleMoodSelect(mood.id)}
                                 >
                                     {/* Subtle glow on hover */}
