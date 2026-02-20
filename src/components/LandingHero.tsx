@@ -176,6 +176,9 @@ export default function LandingHero() {
             <div className="py-12 text-zinc-700 text-xs font-bold tracking-[0.3em] uppercase opacity-50">
                 Cinematch © 2026 - End Choice Paralysis.
             </div>
+            <div className="pb-8 text-zinc-500 text-xs tracking-wide">
+                Built with ❤️ by <a href="https://anujk.in" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-zinc-300 transition-colors">Anuj</a>
+            </div>
         </div>
     );
 }
