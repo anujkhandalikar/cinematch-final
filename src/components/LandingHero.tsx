@@ -47,6 +47,8 @@ export default function LandingHero() {
                 >
                     An average person/couple spends <span className="text-white font-bold">25 minutes</span> just scrolling <br className="hidden md:block" />
                     for a movie. We solve it in <span className="text-white font-bold">180 seconds.</span>
+                    <br />
+                    Based on <a href="https://drive.google.com/file/d/1tDLNhn8A9PWnxelA1sJxlSGup9brrfTp/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-red-500 underline underline-offset-2 hover:text-red-400 transition-colors">this thesis</a>.
                 </motion.p>
 
                 {/* CTA Buttons */}
@@ -173,8 +175,11 @@ export default function LandingHero() {
             </div>
 
             {/* Footer tagline */}
-            <div className="py-12 text-zinc-700 text-xs font-bold tracking-[0.3em] uppercase opacity-50">
+            <div className="relative z-10 py-12 text-zinc-700 text-xs font-bold tracking-[0.3em] uppercase opacity-50">
                 Cinematch © 2026 - End Choice Paralysis.
+            </div>
+            <div className="relative z-10 pb-10 text-zinc-400 text-sm tracking-wide">
+                Built with ❤️ by <a href="https://anujk.in" target="_blank" rel="noopener noreferrer" className="text-zinc-300 underline underline-offset-2 hover:text-white transition-colors">Anuj</a>
             </div>
         </div>
     );

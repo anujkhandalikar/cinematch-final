@@ -152,7 +152,7 @@ export default function ResultsPage() {
                 </div>
 
                 <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black to-transparent z-20">
-                    <div className="max-w-3xl mx-auto">
+                    <div className="max-w-3xl mx-auto flex flex-col items-center gap-3">
                         <Button
                             className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
                             variant="outline"
@@ -160,6 +160,9 @@ export default function ResultsPage() {
                         >
                             <Home className="w-5 h-5 mr-2" /> Home
                         </Button>
+                        <div className="text-zinc-400 text-sm tracking-wide">
+                            Built with ❤️ by <a href="https://anujk.in" target="_blank" rel="noopener noreferrer" className="text-zinc-300 underline underline-offset-2 hover:text-white transition-colors">Anuj</a>
+                        </div>
                     </div>
                 </div>
             </div>
