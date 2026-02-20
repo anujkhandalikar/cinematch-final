@@ -84,7 +84,7 @@ export interface Database {
                     year: number
                     overview: string
                     imdb_rating: number
-                    mood: 'imdb_top' | 'light_and_fun' | 'bollywood'
+                    mood: 'imdb_top' | 'light_and_fun' | 'bollywood' | 'oscar' | 'srk'
                     created_at: string
                 }
                 Insert: {
@@ -95,7 +95,7 @@ export interface Database {
                     year: number
                     overview: string
                     imdb_rating: number
-                    mood: 'imdb_top' | 'light_and_fun' | 'bollywood'
+                    mood: 'imdb_top' | 'light_and_fun' | 'bollywood' | 'oscar' | 'srk'
                     created_at?: string
                 }
                 Update: {
@@ -106,7 +106,7 @@ export interface Database {
                     year?: number
                     overview?: string
                     imdb_rating?: number
-                    mood?: 'imdb_top' | 'light_and_fun' | 'bollywood'
+                    mood?: 'imdb_top' | 'light_and_fun' | 'bollywood' | 'oscar' | 'srk'
                     created_at?: string
                 }
             }

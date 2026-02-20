@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Trophy, PartyPopper, Clapperboard } from "lucide-react"
+import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star } from "lucide-react"
 import { motion } from "framer-motion"
 import type { Mood } from "@/lib/movies"
 
@@ -27,6 +27,20 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
         description: "The best of Indian cinema",
         icon: <Clapperboard className="w-7 h-7" />,
         gradient: "from-emerald-500/20 to-teal-600/5"
+    },
+    {
+        id: "oscar",
+        label: "Oscar Winners",
+        description: "Academy Award Best Picture winners",
+        icon: <Award className="w-7 h-7" />,
+        gradient: "from-yellow-500/20 to-amber-600/5"
+    },
+    {
+        id: "srk",
+        label: "Shah Rukh Khan",
+        description: "King Khan's finest films",
+        icon: <Star className="w-7 h-7" />,
+        gradient: "from-orange-500/20 to-red-600/5"
     }
 ]
 
