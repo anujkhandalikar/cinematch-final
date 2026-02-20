@@ -70,7 +70,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             // 4. Load mood-filtered movies
             const mood = sessionStorage.getItem("selected_mood") as Mood | null
             if (mood) {
-                setMovies(getMoviesByMood(mood))
+                getMoviesByMood(mood).then(setMovies)
             }
 
             // 5. Initial Participant Fetch

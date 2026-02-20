@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { type Movie, MOVIES } from "@/lib/movies"
+import { type Movie, getMoviesByIds } from "@/lib/movies"
 import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 
@@ -18,12 +18,13 @@ export default function ResultsPage() {
         const saved = sessionStorage.getItem("solo_results")
         if (saved) {
             const likedIds = JSON.parse(saved) as string[]
-            const likedMovies = MOVIES.filter((m: Movie) => likedIds.includes(m.id))
-            setLikes(likedMovies)
-            // Pre-select the first liked movie
-            if (likedMovies.length > 0) {
-                setSelectedId(likedMovies[0].id)
-            }
+            getMoviesByIds(likedIds).then((likedMovies) => {
+                setLikes(likedMovies)
+                // Pre-select the first liked movie
+                if (likedMovies.length > 0) {
+                    setSelectedId(likedMovies[0].id)
+                }
+            })
         }
     }, [])
 
