@@ -7,8 +7,11 @@ import { SwipeDeck } from "@/components/SwipeDeck"
 import { Button } from "@/components/ui/button"
 import { getMoviesByMoods, shuffleWithSeed, type Mood, type Movie } from "@/lib/movies"
 import { toast } from "sonner"
+import { NudgeOverlay } from "@/components/NudgeOverlay"
+import { PauseOverlay } from "@/components/PauseOverlay"
 import { Users, Play, Clock, Share2, Copy, Check, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
+import type { RealtimeChannel } from "@supabase/supabase-js"
 
 interface Participant {
     user_id: string
@@ -22,7 +25,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const router = useRouter()
     const supabase = useMemo(() => createClient(), [])
 
-    const [status, setStatus] = useState<"waiting" | "active" | "finished">("waiting")
+    const [status, setStatus] = useState<"waiting" | "active" | "paused" | "finished">("waiting")
     const [participants, setParticipants] = useState<Participant[]>([])
     const [userId, setUserId] = useState<string>("")
     const [movies, setMovies] = useState<Movie[]>([])
@@ -32,6 +35,19 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const [countdown, setCountdown] = useState<number | null>(null)
     const timerStarted = useRef(false)
     const roomSeed = useRef<string | null>(null)
+    const createdBy = useRef<string | null>(null)
+    const userIdRef = useRef<string>("")
+    const myRightSwipesRef = useRef<Set<string>>(new Set())
+    const otherRightSwipesRef = useRef<Set<string>>(new Set())
+    const [mutualMatches, setMutualMatches] = useState<string[]>([])
+    const [showNudge, setShowNudge] = useState(false)
+    const nudgeShownRef = useRef(false)
+    const navigatingRef = useRef(false)
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+    const channelRef = useRef<RealtimeChannel | null>(null)
+    const [myLikedCount, setMyLikedCount] = useState(0)
+    const [swipedCount, setSwipedCount] = useState(0)
+    const NUDGE_THRESHOLD = 3
 
     const normalizeParticipant = (row: Record<string, unknown>): Participant => ({
         user_id: (row.user_id ?? "") as string,
@@ -64,6 +80,79 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         setMovies(shuffled)
     }, [])
 
+    const fetchMutualMatches = useCallback(async () => {
+        const { data: rightSwipes } = await supabase
+            .from("swipes")
+            .select("movie_id, user_id")
+            .eq("room_id", code)
+            .eq("direction", "right")
+
+        if (!rightSwipes) return []
+
+        const counts = new Map<string, Set<string>>()
+        for (const s of rightSwipes) {
+            if (!counts.has(s.movie_id)) counts.set(s.movie_id, new Set())
+            counts.get(s.movie_id)!.add(s.user_id)
+        }
+        const mutual = [...counts.entries()]
+            .filter(([, users]) => users.size >= 2)
+            .map(([movieId]) => movieId)
+
+        setMutualMatches(mutual)
+        return mutual
+    }, [supabase, code])
+
+    const checkNudge = useCallback(async () => {
+        if (createdBy.current !== userIdRef.current) return
+
+        const mutual = await fetchMutualMatches()
+
+        if (nudgeShownRef.current) return
+        if (mutual.length >= NUDGE_THRESHOLD) {
+            nudgeShownRef.current = true
+            await supabase.from("rooms").update({ status: "paused" }).eq("id", code)
+            channelRef.current?.send({
+                type: "broadcast",
+                event: "room_status",
+                payload: { status: "paused", matchCount: mutual.length },
+            })
+            setShowNudge(true)
+        }
+    }, [supabase, code, fetchMutualMatches])
+
+    const finishAndNavigate = useCallback(async () => {
+        if (navigatingRef.current) return
+        navigatingRef.current = true
+
+        await supabase.from("rooms").update({ status: "finished" }).eq("id", code)
+        channelRef.current?.send({
+            type: "broadcast",
+            event: "room_status",
+            payload: { status: "finished" },
+        })
+
+        const { data: rightSwipes } = await supabase
+            .from("swipes")
+            .select("movie_id, user_id")
+            .eq("room_id", code)
+            .eq("direction", "right")
+
+        if (rightSwipes) {
+            const counts = new Map<string, Set<string>>()
+            for (const s of rightSwipes) {
+                if (!counts.has(s.movie_id)) counts.set(s.movie_id, new Set())
+                counts.get(s.movie_id)!.add(s.user_id)
+            }
+            const mutualIds = [...counts.entries()]
+                .filter(([, users]) => users.size >= 2)
+                .map(([movieId]) => movieId)
+
+            sessionStorage.setItem("duo_results", JSON.stringify(mutualIds))
+        }
+
+        router.push("/results")
+    }, [supabase, code, router])
+
     useEffect(() => {
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser()
@@ -72,6 +161,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 return
             }
             setUserId(user.id)
+            userIdRef.current = user.id
 
             const { data: room, error } = await supabase
                 .from("rooms")
@@ -87,6 +177,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
             setStatus(room.status)
             roomSeed.current = room.seed ?? null
+            createdBy.current = room.created_by ?? null
 
             const mood = sessionStorage.getItem("selected_mood") as Mood | null
 
@@ -102,7 +193,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
             await fetchParticipants()
 
-            if (room.status === "active" && room.seed) {
+            if ((room.status === "active" || room.status === "paused") && room.seed) {
                 const { data: parts } = await supabase
                     .from("participants")
                     .select("*")
@@ -111,10 +202,58 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 if (parts) {
                     await buildDeck(parts.map(normalizeParticipant), room.seed)
                 }
+
+                const { data: allSwipes } = await supabase
+                    .from("swipes")
+                    .select("movie_id, user_id, direction")
+                    .eq("room_id", code)
+
+                if (allSwipes) {
+                    let myLikes = 0
+                    let totalSwiped = 0
+                    for (const s of allSwipes) {
+                        if (s.user_id === user.id) {
+                            totalSwiped++
+                            if (s.direction === "right") {
+                                myRightSwipesRef.current.add(s.movie_id)
+                                myLikes++
+                            }
+                        } else if (s.direction === "right") {
+                            otherRightSwipesRef.current.add(s.movie_id)
+                        }
+                    }
+                    setMyLikedCount(myLikes)
+                    setSwipedCount(totalSwiped)
+                    const mutual = [...myRightSwipesRef.current].filter(id => otherRightSwipesRef.current.has(id))
+                    setMutualMatches(mutual)
+                }
+
+                if (room.status === "paused" && room.created_by === user.id) {
+                    nudgeShownRef.current = true
+                    setShowNudge(true)
+                }
+            }
+
+            if (room.status === "finished") {
+                finishAndNavigate()
+                return
             }
 
             const roomChannel = supabase
                 .channel(`room:${code}`)
+                .on('broadcast', { event: 'room_status' }, (payload) => {
+                    const msg = payload.payload as { status: string; matchCount?: number }
+                    if (msg.status === "paused") {
+                        setStatus("paused")
+                        if (msg.matchCount) setMutualMatches(prev => prev.length >= (msg.matchCount ?? 0) ? prev : Array(msg.matchCount ?? 0).fill(""))
+                        fetchMutualMatches()
+                    } else if (msg.status === "active") {
+                        setStatus("active")
+                    } else if (msg.status === "finished") {
+                        setStatus("finished")
+                        finishAndNavigate()
+                    }
+                })
                 .on(
                     'postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${code}` },
@@ -134,6 +273,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                                 await buildDeck(parts.map(normalizeParticipant), seed)
                             }
                         }
+                        if (newStatus === "finished") {
+                            finishAndNavigate()
+                        }
                     }
                 )
                 .on(
@@ -141,17 +283,30 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     { event: '*', schema: 'public', table: 'participants', filter: `room_id=eq.${code}` },
                     () => fetchParticipants()
                 )
+                .on(
+                    'postgres_changes',
+                    { event: 'INSERT', schema: 'public', table: 'swipes', filter: `room_id=eq.${code}` },
+                    (payload) => {
+                        const s = payload.new as { user_id: string; movie_id: string; direction: string }
+                        if (s.user_id !== userIdRef.current && s.direction === "right") {
+                            otherRightSwipesRef.current.add(s.movie_id)
+                            checkNudge()
+                        }
+                    }
+                )
                 .subscribe()
 
+            channelRef.current = roomChannel
             setIsLoading(false)
 
             return () => {
                 supabase.removeChannel(roomChannel)
+                channelRef.current = null
             }
         }
 
         init()
-    }, [code, router, supabase, fetchParticipants, buildDeck])
+    }, [code, router, supabase, fetchParticipants, buildDeck, finishAndNavigate, checkNudge])
 
     const toggleReady = async () => {
         const me = participants.find(p => p.user_id === userId)
@@ -226,18 +381,64 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     useEffect(() => {
         if (status === "active" && !timerStarted.current) {
             timerStarted.current = true
-            const interval = setInterval(() => {
+            timerRef.current = setInterval(() => {
                 setTimeLeft(prev => {
                     if (prev <= 1) {
-                        clearInterval(interval)
+                        if (timerRef.current) clearInterval(timerRef.current)
                         return 0
                     }
                     return prev - 1
                 })
             }, 1000)
-            return () => clearInterval(interval)
         }
     }, [status])
+
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (timeLeft === 0 && (status === "active" || status === "paused")) {
+            setShowNudge(false)
+            finishAndNavigate()
+        }
+    }, [timeLeft, status, finishAndNavigate])
+
+    useEffect(() => {
+        if (status !== "active" || createdBy.current !== userIdRef.current) return
+        const poll = setInterval(() => { checkNudge() }, 2000)
+        return () => clearInterval(poll)
+    }, [status, checkNudge])
+
+    useEffect(() => {
+        if (status === "paused" && createdBy.current !== userIdRef.current) {
+            fetchMutualMatches()
+        }
+    }, [status, fetchMutualMatches])
+
+    useEffect(() => {
+        if (status === "waiting" || status === "finished") return
+        if (createdBy.current === userIdRef.current) return
+        const poll = setInterval(async () => {
+            const { data: room } = await supabase
+                .from("rooms")
+                .select("status")
+                .eq("id", code)
+                .single()
+            if (!room) return
+            const dbStatus = room.status as "waiting" | "active" | "paused" | "finished"
+            if (dbStatus === "finished") {
+                setStatus("finished")
+                finishAndNavigate()
+            } else if (dbStatus !== status) {
+                setStatus(dbStatus)
+                if (dbStatus === "paused") fetchMutualMatches()
+            }
+        }, 1000)
+        return () => clearInterval(poll)
+    }, [status, supabase, code, finishAndNavigate, fetchMutualMatches])
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60).toString().padStart(2, "0")
@@ -253,6 +454,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     }
 
     const handleSwipe = async (movieId: string, direction: "left" | "right") => {
+        setSwipedCount(prev => prev + 1)
+
         const { error } = await supabase.from("swipes").insert({
             room_id: code,
             user_id: userId,
@@ -265,27 +468,37 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         }
 
         if (direction === "right") {
-            const { data: otherSwipes } = await supabase
-                .from("swipes")
-                .select("*")
-                .eq("room_id", code)
-                .eq("movie_id", movieId)
-                .eq("direction", "right")
-                .neq("user_id", userId)
-
-            if (otherSwipes && otherSwipes.length > 0) {
-                const movie = movies.find(m => m.id === movieId)
-                toast.success(`It's a Match! ${movie?.title}`, {
-                    duration: 4000,
-                    position: "top-center",
-                })
-            }
+            myRightSwipesRef.current.add(movieId)
+            setMyLikedCount(prev => prev + 1)
+            await checkNudge()
         }
+    }
+
+    const handleNudgeContinue = async () => {
+        setShowNudge(false)
+        await supabase.from("rooms").update({ status: "active" }).eq("id", code)
+        channelRef.current?.send({
+            type: "broadcast",
+            event: "room_status",
+            payload: { status: "active" },
+        })
+    }
+
+    const handleNudgeCheckShortlist = async () => {
+        setShowNudge(false)
+        channelRef.current?.send({
+            type: "broadcast",
+            event: "room_status",
+            payload: { status: "finished" },
+        })
+        await finishAndNavigate()
     }
 
     const handleEmpty = () => {
         toast("Stack finished! Waiting for partner...")
     }
+
+    const isHost = createdBy.current === userId
 
     // --- Render ---
 
@@ -484,12 +697,12 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         )
     }
 
-    if (status === "active") {
+    if (status === "active" || status === "paused") {
         return (
-            <div className="flex flex-col items-center min-h-screen bg-black text-white dot-pattern overflow-hidden relative">
+            <div className="flex flex-col items-center justify-between h-[calc(100dvh-5rem)] p-4 bg-black text-white dot-pattern overflow-hidden relative">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
-                <header className="w-full grid grid-cols-3 items-center p-6 z-50 relative">
+                <header className="w-full grid grid-cols-3 items-center mb-4 z-50 max-w-md mx-auto pt-4 relative">
                     <div />
                     <div />
                     <div className="flex justify-end">
@@ -504,13 +717,38 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     </div>
                 </header>
 
-                <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10 pb-20">
+                <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10">
                     <SwipeDeck
                         movies={movies}
                         onSwipe={handleSwipe}
                         onEmpty={handleEmpty}
+                        disabled={status === "paused"}
                     />
                 </div>
+
+                <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
+                        <span>{myLikedCount} liked</span>
+                        <span>{Math.max(0, movies.length - swipedCount)} of {movies.length} remaining</span>
+                    </div>
+                    <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                        <div
+                            className="h-full bg-red-600 transition-all duration-1000 ease-linear rounded-full"
+                            style={{ width: `${((180 - timeLeft) / 180) * 100}%` }}
+                        />
+                    </div>
+                </div>
+
+                {isHost && (
+                    <NudgeOverlay
+                        show={showNudge}
+                        likedCount={mutualMatches.length}
+                        onContinue={handleNudgeContinue}
+                        onCheckShortlist={handleNudgeCheckShortlist}
+                    />
+                )}
+
+                {!isHost && <PauseOverlay show={status === "paused"} matchCount={mutualMatches.length} />}
             </div>
         )
     }

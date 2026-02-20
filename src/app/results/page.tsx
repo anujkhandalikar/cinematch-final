@@ -13,14 +13,19 @@ export default function ResultsPage() {
     const router = useRouter()
     const [likes, setLikes] = useState<Movie[]>([])
     const [selectedId, setSelectedId] = useState<string | null>(null)
+    const [isDuo, setIsDuo] = useState(false)
 
     useEffect(() => {
-        const saved = sessionStorage.getItem("solo_results")
+        const duoResults = sessionStorage.getItem("duo_results")
+        const soloResults = sessionStorage.getItem("solo_results")
+        const saved = duoResults || soloResults
+
+        if (duoResults) setIsDuo(true)
+
         if (saved) {
             const likedIds = JSON.parse(saved) as string[]
             getMoviesByIds(likedIds).then((likedMovies) => {
                 setLikes(likedMovies)
-                // Pre-select the first liked movie
                 if (likedMovies.length > 0) {
                     setSelectedId(likedMovies[0].id)
                 }
@@ -38,9 +43,9 @@ export default function ResultsPage() {
                         <span className="flex h-2 w-2 rounded-full bg-red-600 mr-2 animate-pulse"></span>
                         Mission Accomplished
                     </span>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter leading-none">Your <span className="text-red-600">Shortlist</span></h1>
+                    <h1 className="text-5xl font-black uppercase tracking-tighter leading-none">{isDuo ? "Mutual" : "Your"} <span className="text-red-600">Shortlist</span></h1>
                     <p className="text-zinc-500 font-medium text-lg">
-                        You liked <span className="text-white font-bold">{likes.length}</span> movies.
+                        {isDuo ? "You both liked" : "You liked"} <span className="text-white font-bold">{likes.length}</span> {likes.length === 1 ? "movie" : "movies"}.
                     </p>
                 </header>
 

@@ -11,9 +11,10 @@ interface MovieCardProps {
     movie: Movie
     onSwipe: (direction: "left" | "right") => void
     index: number
+    disabled?: boolean
 }
 
-export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
+export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
     const [exitX, setExitX] = useState<number | null>(null)
     const [synopsisOpen, setSynopsisOpen] = useState(false)
     const x = useMotionValue(0)
@@ -65,7 +66,7 @@ export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
                     scale: 1 - index * 0.05,
                     y: index * 15,
                 }}
-                drag={isFront && !synopsisOpen ? "x" : false}
+                drag={isFront && !synopsisOpen && !disabled ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
                 onDragEnd={handleDragEnd}
                 animate={exitX !== null ? { x: exitX * 2, opacity: 0 } : {}}

@@ -9,9 +9,10 @@ interface SwipeDeckProps {
     movies: Movie[]
     onSwipe: (movieId: string, direction: "left" | "right") => void
     onEmpty: () => void
+    disabled?: boolean
 }
 
-export function SwipeDeck({ movies, onSwipe, onEmpty }: SwipeDeckProps) {
+export function SwipeDeck({ movies, onSwipe, onEmpty, disabled }: SwipeDeckProps) {
     const [activeMovies, setActiveMovies] = useState(movies)
     const [history, setHistory] = useState<Movie[]>([]) // For potential Undo feature later
 
@@ -42,6 +43,7 @@ export function SwipeDeck({ movies, onSwipe, onEmpty }: SwipeDeckProps) {
                         movie={movie}
                         index={index}
                         onSwipe={handleSwipe}
+                        disabled={disabled}
                     />
                 ))}
             </AnimatePresence>
