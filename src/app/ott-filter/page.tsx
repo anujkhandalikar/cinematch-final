@@ -17,25 +17,9 @@ const PROVIDER_CONFIG: Record<string, { color: string; gradient: string }> = {
         color: "#00A8E1",
         gradient: "from-sky-500/25 to-blue-900/10",
     },
-    "Disney+ Hotstar": {
-        color: "#1A73E8",
-        gradient: "from-blue-500/25 to-indigo-900/10",
-    },
-    JioCinema: {
-        color: "#E91E63",
-        gradient: "from-pink-500/25 to-pink-900/10",
-    },
     Zee5: {
         color: "#8B5CF6",
         gradient: "from-violet-500/25 to-violet-900/10",
-    },
-    SonyLIV: {
-        color: "#000000",
-        gradient: "from-zinc-500/25 to-zinc-900/10",
-    },
-    "Apple TV+": {
-        color: "#555555",
-        gradient: "from-gray-400/25 to-gray-900/10",
     },
     MUBI: {
         color: "#0080FF",

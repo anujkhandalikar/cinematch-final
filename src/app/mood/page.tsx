@@ -49,11 +49,7 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
 const PROVIDER_COLORS: Record<string, string> = {
     Netflix: "from-red-600/25 to-red-900/10",
     "Amazon Prime Video": "from-sky-500/25 to-blue-900/10",
-    "Disney+ Hotstar": "from-blue-500/25 to-indigo-900/10",
-    JioCinema: "from-pink-500/25 to-pink-900/10",
     Zee5: "from-violet-500/25 to-violet-900/10",
-    SonyLIV: "from-zinc-500/25 to-zinc-900/10",
-    "Apple TV+": "from-gray-400/25 to-gray-900/10",
     MUBI: "from-blue-400/25 to-blue-900/10",
     "Lionsgate Play": "from-amber-500/25 to-amber-900/10",
 }

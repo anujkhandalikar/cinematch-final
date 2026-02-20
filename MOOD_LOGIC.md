@@ -19,7 +19,7 @@ The following table describes the specific criteria used to define each mood dur
 | `light_and_fun` | Something Light & Fun | Fetched from `/discover/movie` with **Genres: 35 (Comedy), 10751 (Family)** | Filtered for feel-good content, sorted by popularity. |
 | `bollywood` | Bollywood | Fetched from `/discover/movie` with **Region: IN, Language: hi (Hindi)** | Specifically targets Indian cinema in the Hindi language. |
 | `oscar` | Oscar Winners | Fetched from **TMDB List ID 5097** | A curated collection of Academy Award Best Picture winners. |
-| `srk` | Shah Rukh Khan | Fetched from **Person ID 1100** | All movie credits where Shah Rukh Khan is part of the cast. |
+| `srk` | Shah Rukh Khan | Fetched from **Person ID 35742** | All movie credits where Shah Rukh Khan is part of the cast. |
 
 ## Technical Implementation Details
 

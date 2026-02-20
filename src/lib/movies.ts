@@ -43,7 +43,7 @@ export async function fetchMovies(mood?: Mood, limit = 20): Promise<Movie[]> {
  * Fetch movies by mood from Supabase.
  */
 export async function getMoviesByMood(mood: Mood): Promise<Movie[]> {
-    return fetchMovies(mood, 50)
+    return fetchMovies(mood, 100)
 }
 
 /**

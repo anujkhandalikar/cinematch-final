@@ -21,17 +21,14 @@ const WATCH_REGION = "IN"
 
 // Major Indian OTT platforms whitelist
 const PROVIDER_WHITELIST = new Set([
-  "Netflix", "Amazon Prime Video", "Disney Plus", "Disney+ Hotstar", "Hotstar",
-  "JioCinema", "Jio Cinema", "Zee5", "ZEE5", "SonyLIV",
-  "Apple TV Plus", "Apple TV+", "MUBI", "Lionsgate Play",
+  "Netflix", "Amazon Prime Video",
+  "Zee5", "ZEE5",
+  "MUBI", "Lionsgate Play",
 ])
 
 function normalizeProvider(name: string): string {
   const map: Record<string, string> = {
-    "Disney Plus": "Disney+ Hotstar", "Disney+ Hotstar": "Disney+ Hotstar",
-    Hotstar: "Disney+ Hotstar", "Apple TV Plus": "Apple TV+",
-    "Apple TV+": "Apple TV+", "Jio Cinema": "JioCinema",
-    JioCinema: "JioCinema", ZEE5: "Zee5", Zee5: "Zee5",
+    ZEE5: "Zee5", Zee5: "Zee5",
   }
   return map[name] ?? name
 }
@@ -142,12 +139,20 @@ async function fetchBollywood(genreMap: Map<number, string>, pageLimit: number):
 }
 
 async function fetchOscarWinners(genreMap: Map<number, string>): Promise<SupabaseMovieRow[]> {
-  // TMDB list: Best Picture Academy Award Winners (list id 5097)
-  const data = await tmdbGet<{ items: Array<{ id: number; title: string; poster_path: string | null; genre_ids?: number[]; release_date?: string; overview?: string; vote_average?: number }> }>(
-    "/list/5097"
-  )
+  // TMDB list 28: "Best Picture Winners - The Academy Awards" (paginated, 20 per page)
+  type ListItem = { id: number; title: string; poster_path: string | null; genre_ids?: number[]; release_date?: string; overview?: string; vote_average?: number }
+  type ListResponse = { items: ListItem[]; total_pages: number }
+
+  const firstPage = await tmdbGet<ListResponse>("/list/28", { page: "1" })
+  const allItems: ListItem[] = [...firstPage.items]
+
+  for (let page = 2; page <= firstPage.total_pages; page++) {
+    const pageData = await tmdbGet<ListResponse>("/list/28", { page: String(page) })
+    allItems.push(...pageData.items)
+  }
+
   const out: SupabaseMovieRow[] = []
-  for (const m of data.items) {
+  for (const m of allItems) {
     const row = mapMovie(
       {
         id: m.id,
@@ -167,9 +172,9 @@ async function fetchOscarWinners(genreMap: Map<number, string>): Promise<Supabas
 }
 
 async function fetchSRK(genreMap: Map<number, string>): Promise<SupabaseMovieRow[]> {
-  // Shah Rukh Khan person_id on TMDB
+  // Shah Rukh Khan person_id on TMDB (https://www.themoviedb.org/person/35742-shah-rukh-khan)
   const data = await tmdbGet<{ cast: Array<{ id: number; title: string; poster_path: string | null; genre_ids?: number[]; release_date?: string; overview?: string; vote_average?: number }> }>(
-    "/person/1100/movie_credits"
+    "/person/35742/movie_credits"
   )
   const out: SupabaseMovieRow[] = []
   for (const m of data.cast) {
@@ -191,7 +196,35 @@ async function fetchSRK(genreMap: Map<number, string>): Promise<SupabaseMovieRow
   return out
 }
 
+function parseArgs(): { targetMood?: Mood; clean: boolean } {
+  const args = process.argv.slice(2)
+  let targetMood: Mood | undefined
+  let clean = false
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--mood" && args[i + 1]) {
+      const validMoods: Mood[] = ["imdb_top", "light_and_fun", "bollywood", "oscar", "srk"]
+      const val = args[i + 1] as Mood
+      if (!validMoods.includes(val)) {
+        throw new Error(`Invalid mood "${val}". Valid: ${validMoods.join(", ")}`)
+      }
+      targetMood = val
+      i++
+    } else if (args[i] === "--clean") {
+      clean = true
+    }
+  }
+
+  if (clean && !targetMood) {
+    throw new Error("--clean requires --mood <name> to avoid accidentally deleting all data")
+  }
+
+  return { targetMood, clean }
+}
+
 async function main() {
+  const { targetMood, clean } = parseArgs()
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceRoleKey) {
@@ -202,7 +235,7 @@ async function main() {
   console.log("Fetching TMDB genre list...")
   const genreMap = await getGenreMap()
 
-  const moodConfig: { mood: Mood; label: string; fetch: () => Promise<SupabaseMovieRow[]> }[] = [
+  let moodConfig: { mood: Mood; label: string; fetch: () => Promise<SupabaseMovieRow[]> }[] = [
     { mood: "imdb_top", label: "IMDb top rated", fetch: () => fetchTopRated(genreMap, 5) },
     { mood: "light_and_fun", label: "Light & fun (comedy)", fetch: () => fetchLightAndFun(genreMap, 5) },
     { mood: "bollywood", label: "Bollywood", fetch: () => fetchBollywood(genreMap, 5) },
@@ -210,8 +243,23 @@ async function main() {
     { mood: "srk", label: "Shah Rukh Khan", fetch: () => fetchSRK(genreMap) },
   ]
 
+  if (targetMood) {
+    moodConfig = moodConfig.filter((c) => c.mood === targetMood)
+    console.log(`Targeting mood: ${targetMood}`)
+  }
+
+  if (clean && targetMood) {
+    console.log(`Deleting existing ${targetMood} movies...`)
+    const { error } = await supabase.from("movies").delete().eq("mood", targetMood)
+    if (error) {
+      console.error("Delete error:", error)
+      process.exit(1)
+    }
+    console.log(`  Deleted.`)
+  }
+
   const allRows: SupabaseMovieRow[] = []
-  for (const { mood, label, fetch } of moodConfig) {
+  for (const { label, fetch } of moodConfig) {
     console.log(`Fetching ${label}...`)
     const rows = await fetch()
     console.log(`  ${rows.length} movies`)
@@ -253,8 +301,9 @@ async function main() {
   }
   console.log(`  Enriched ${enriched} movies with OTT data.`)
 
-  console.log(`Upserting ${allRows.length} movies into Supabase...`)
-  const { error } = await supabase.from("movies").upsert(allRows, { onConflict: "id" })
+  const deduped = [...new Map(allRows.map((r) => [r.id, r])).values()]
+  console.log(`Upserting ${deduped.length} movies into Supabase (${allRows.length - deduped.length} duplicates removed)...`)
+  const { error } = await supabase.from("movies").upsert(deduped, { onConflict: "id" })
   if (error) {
     console.error("Supabase upsert error:", error)
     process.exit(1)
