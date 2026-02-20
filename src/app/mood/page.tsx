@@ -65,10 +65,10 @@ export default function MoodPage() {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="z-10 w-full max-w-md relative"
+                className="z-10 w-full max-w-md md:max-w-5xl relative"
             >
                 {/* Header Badge */}
-                <div className="flex justify-center mb-8">
+                <div className="flex justify-center mb-4">
                     <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-400 uppercase tracking-widest backdrop-blur-sm">
                         <span className="flex h-2 w-2 rounded-full bg-red-600 mr-2 animate-pulse"></span>
                         Set The Vibe
@@ -95,7 +95,7 @@ export default function MoodPage() {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="grid gap-4 pt-4"
+                            className="grid gap-4 pt-4 md:grid-cols-5"
                         >
                             {MOODS.map((mood, i) => (
                                 <motion.button
@@ -103,20 +103,20 @@ export default function MoodPage() {
                                     initial={{ opacity: 0, y: 15 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.15 + i * 0.08 }}
-                                    className={`group relative flex items-center p-6 rounded-xl bg-gradient-to-r ${mood.gradient} border border-zinc-800 hover:border-zinc-600 hover:scale-[1.02] transition-all duration-300 text-left w-full overflow-hidden`}
+                                    className={`group relative flex items-center md:flex-col md:justify-center md:py-6 md:px-4 p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b ${mood.gradient} border border-zinc-800 hover:border-zinc-600 hover:scale-[1.02] transition-all duration-300 text-left md:text-center w-full overflow-hidden`}
                                     onClick={() => handleMoodSelect(mood.id)}
                                 >
                                     {/* Subtle glow on hover */}
                                     <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                                    <div className="relative mr-5 p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 transition-colors text-zinc-400 group-hover:text-white">
+                                    <div className="relative mr-5 md:mr-0 md:mb-3 p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 transition-colors text-zinc-400 group-hover:text-white">
                                         {mood.icon}
                                     </div>
                                     <div className="relative">
-                                        <h3 className="font-black text-lg uppercase tracking-wide text-white mb-1 group-hover:text-red-500 transition-colors">
+                                        <h3 className="font-black text-lg md:text-sm uppercase tracking-wide text-white mb-1 md:mb-0 group-hover:text-red-500 transition-colors">
                                             {mood.label}
                                         </h3>
-                                        <p className="text-zinc-500 text-sm font-medium">
+                                        <p className="text-zinc-500 text-sm font-medium md:hidden">
                                             {mood.description}
                                         </p>
                                     </div>
