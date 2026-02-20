@@ -75,6 +75,41 @@ export interface Database {
                     created_at?: string
                 }
             }
+            movies: {
+                Row: {
+                    id: string
+                    title: string
+                    poster_url: string
+                    genre: string[]
+                    year: number
+                    overview: string
+                    imdb_rating: number
+                    mood: 'imdb_top' | 'light_and_fun' | 'bollywood' | 'oscar' | 'srk'
+                    created_at: string
+                }
+                Insert: {
+                    id: string
+                    title: string
+                    poster_url: string
+                    genre: string[]
+                    year: number
+                    overview: string
+                    imdb_rating: number
+                    mood: 'imdb_top' | 'light_and_fun' | 'bollywood' | 'oscar' | 'srk'
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    title?: string
+                    poster_url?: string
+                    genre?: string[]
+                    year?: number
+                    overview?: string
+                    imdb_rating?: number
+                    mood?: 'imdb_top' | 'light_and_fun' | 'bollywood' | 'oscar' | 'srk'
+                    created_at?: string
+                }
+            }
         }
     }
 }

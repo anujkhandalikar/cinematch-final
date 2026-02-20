@@ -1,0 +1,33 @@
+-- ─── Step 1: Alter mood check constraint to allow new values ─────────────────
+
+alter table public.movies drop constraint if exists movies_mood_check;
+alter table public.movies add constraint movies_mood_check
+  check (mood in ('imdb_top', 'light_and_fun', 'bollywood', 'oscar', 'srk'));
+
+-- ─── Step 2: Seed Oscar Winners (10 movies) ─────────────────────────────────
+
+insert into public.movies (id, title, poster_url, genre, year, overview, imdb_rating, mood) values
+('oscar_1', 'Parasite', 'https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg', ARRAY['Thriller', 'Drama', 'Comedy'], 2019, 'Greed and class discrimination threaten the newly formed symbiotic relationship between the wealthy Park family and the destitute Kim clan.', 8.5, 'oscar'),
+('oscar_2', 'The Silence of the Lambs', 'https://image.tmdb.org/t/p/w500/uS9m8OBk1RVfSPnL1GmecJdEbTR.jpg', ARRAY['Crime', 'Thriller', 'Horror'], 1991, 'A young F.B.I. cadet must receive the help of an incarcerated and manipulative cannibal killer to help catch another serial killer.', 8.6, 'oscar'),
+('oscar_3', 'Casablanca', 'https://image.tmdb.org/t/p/w500/5K7cOHoay2mZusSLezBOY0Qxh8a.jpg', ARRAY['Drama', 'Romance', 'War'], 1942, 'A cynical expatriate American cafe owner struggles to decide whether or not to help his former lover and her fugitive husband escape the Nazis in French Morocco.', 8.5, 'oscar'),
+('oscar_4', 'One Flew Over the Cuckoo''s Nest', 'https://image.tmdb.org/t/p/w500/3jcbDmRFiQ83drXNOvRDeKHxS0C.jpg', ARRAY['Drama'], 1975, 'In a mental institution, a rebellious rogue confront an oppressive nurse and rallies up the patients to take on the establishment.', 8.7, 'oscar'),
+('oscar_5', 'The Lord of the Rings: The Return of the King', 'https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg', ARRAY['Fantasy', 'Adventure', 'Drama'], 2003, 'Gandalf and Aragorn lead the World of Men against Sauron''s army to draw his gaze from Frodo and Sam as they approach Mount Doom with the One Ring.', 9.0, 'oscar'),
+('oscar_6', 'Gladiator', 'https://image.tmdb.org/t/p/w500/ty8TGRuvJLPUmAR1H1nRIsgfvim.jpg', ARRAY['Action', 'Drama', 'Adventure'], 2000, 'A former Roman General sets out to exact vengeance against the corrupt emperor who murdered his family and sent him into slavery.', 8.5, 'oscar'),
+('oscar_7', 'The Godfather Part II', 'https://image.tmdb.org/t/p/w500/hek3koDUyRQk7FIhPXsa6mT2Zc3.jpg', ARRAY['Crime', 'Drama'], 1974, 'The early life and career of Vito Corleone in 1920s New York City is portrayed, while his son, Michael, expands and tightens his grip on the family crime syndicate.', 9.0, 'oscar'),
+('oscar_8', 'No Country for Old Men', 'https://image.tmdb.org/t/p/w500/bj1v6YKF8yHqA489GFMhenuKvRl.jpg', ARRAY['Crime', 'Drama', 'Thriller'], 2007, 'Violence and mayhem ensue after a hunter stumbles upon a drug deal gone wrong and more than two million dollars in cash near the Rio Grande.', 8.2, 'oscar'),
+('oscar_9', '12 Years a Slave', 'https://image.tmdb.org/t/p/w500/xdANQijuNrJaw1HA61rDhOKMRmZ.jpg', ARRAY['Drama', 'History'], 2013, 'In the antebellum United States, Solomon Northup, a free black man from upstate New York, is abducted and sold into slavery.', 8.1, 'oscar'),
+('oscar_10', 'Lawrence of Arabia', 'https://image.tmdb.org/t/p/w500/AiAm0ELastWn6TGfOpaQkTdqiVK.jpg', ARRAY['Drama', 'Adventure', 'History'], 1962, 'The story of T.E. Lawrence, the English officer who successfully united and led the diverse, often warring, parsing Arab tribes during World War I.', 8.3, 'oscar');
+
+-- ─── Step 3: Seed Shah Rukh Khan (10 movies) ─────────────────────────────────
+
+insert into public.movies (id, title, poster_url, genre, year, overview, imdb_rating, mood) values
+('srk_1', 'Swades', 'https://image.tmdb.org/t/p/w500/tSlfOSqg6gApJwpOmONOljgiYTC.jpg', ARRAY['Drama'], 2004, 'A successful Indian scientist in NASA returns to his village to take his nanny to America with him and in the process rediscovers his roots.', 8.2, 'srk'),
+('srk_2', 'Chak De! India', 'https://image.tmdb.org/t/p/w500/8JqxNvITjJGVBfuLBJB7M3j0eGz.jpg', ARRAY['Drama', 'Sport'], 2007, 'A disgraced former Indian hockey player coaches the Indian women''s hockey team and leads them to a world championship.', 8.1, 'srk'),
+('srk_3', 'My Name Is Khan', 'https://image.tmdb.org/t/p/w500/s3VJqkolZfBECP4nJFnYX0FPPZH.jpg', ARRAY['Drama'], 2010, 'An Indian Muslim man with Asperger''s syndrome takes a challenge to meet the President of the United States seriously, and embarks on a cross-country journey.', 7.9, 'srk'),
+('srk_4', 'Kal Ho Naa Ho', 'https://image.tmdb.org/t/p/w500/bPXiJn7AWueCNKHPhBxsQgUaJQx.jpg', ARRAY['Comedy', 'Drama', 'Romance', 'Musical'], 2003, 'Naina, an introverted, perpetually depressed girl''s life changes when she meets Aman, a cheerful and optimistic neighbor. But Aman has a secret that could break them apart.', 7.9, 'srk'),
+('srk_5', 'Veer-Zaara', 'https://image.tmdb.org/t/p/w500/tBuFIHMp0GqZ6JGJcsHEoOFKJA7.jpg', ARRAY['Drama', 'Romance', 'Musical'], 2004, 'An Indian Air Force officer falls in love with a Pakistani woman. When he''s imprisoned for 22 years on false charges, a young Pakistani lawyer fights for his freedom.', 7.8, 'srk'),
+('srk_6', 'Kabhi Khushi Kabhie Gham', 'https://image.tmdb.org/t/p/w500/o1LgqDwJ9h4W7mlJdTtFsXxv1jK.jpg', ARRAY['Drama', 'Musical', 'Romance'], 2001, 'An adopted son is disowned by his wealthy father when he falls in love with a girl from a lower class. Years later, his younger brother sets out to reunite the family.', 7.4, 'srk'),
+('srk_7', 'Devdas', 'https://image.tmdb.org/t/p/w500/vPfFK3RPFIsUSY2ehoY9S7xKz1H.jpg', ARRAY['Drama', 'Romance', 'Musical'], 2002, 'After his wealthy family forbids him from marrying the woman he is in love with, Devdas Mukherjee''s life spirals further and further out of control.', 7.5, 'srk'),
+('srk_8', 'Kuch Kuch Hota Hai', 'https://image.tmdb.org/t/p/w500/g9pcqFi0JJg4BbXi7VfGm3RH3S5.jpg', ARRAY['Comedy', 'Drama', 'Romance', 'Musical'], 1998, 'During their college years, Anjali was in love with her best friend Rahul, but he only had eyes for Tina. Years later, Rahul realizes his true feelings.', 7.5, 'srk'),
+('srk_9', 'Baazigar', 'https://image.tmdb.org/t/p/w500/7Kj7dhJnBujFgCv9GnU3BvUEtYg.jpg', ARRAY['Crime', 'Drama', 'Romance', 'Thriller'], 1993, 'A mysterious young man named Ajay plots an elaborate plan of revenge against a wealthy businessman who ruined his family.', 7.1, 'srk'),
+('srk_10', 'Raees', 'https://image.tmdb.org/t/p/w500/uaFTIgacTcFyHi4mGCGjGjXByaE.jpg', ARRAY['Action', 'Crime', 'Drama', 'Thriller'], 2017, 'A bootlegger sets up a rival gang against the state government during the liquor prohibition era in Gujarat, India.', 6.4, 'srk');

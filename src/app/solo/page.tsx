@@ -32,7 +32,9 @@ export default function SoloPage() {
     useEffect(() => {
         const mood = sessionStorage.getItem("selected_mood") as Mood | null
         if (mood) {
-            setMovies(shuffle(getMoviesByMood(mood)))
+            getMoviesByMood(mood).then((movies) => {
+                setMovies(shuffle(movies))
+            })
         } else {
             // Fallback: if no mood selected, redirect back
             router.push("/mood")
