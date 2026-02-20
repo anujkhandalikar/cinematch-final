@@ -11,6 +11,7 @@ export interface Movie {
     overview: string
     imdb_rating: number
     mood: Mood
+    ott_providers: string[]
 }
 
 const supabase = createClient()
@@ -21,7 +22,7 @@ const supabase = createClient()
 export async function fetchMovies(mood?: Mood, limit = 20): Promise<Movie[]> {
     let query = supabase
         .from("movies")
-        .select("id, title, poster_url, genre, year, overview, imdb_rating, mood")
+        .select("id, title, poster_url, genre, year, overview, imdb_rating, mood, ott_providers")
         .limit(limit)
 
     if (mood) {
@@ -42,7 +43,7 @@ export async function fetchMovies(mood?: Mood, limit = 20): Promise<Movie[]> {
  * Fetch movies by mood from Supabase.
  */
 export async function getMoviesByMood(mood: Mood): Promise<Movie[]> {
-    return fetchMovies(mood, 50)
+    return fetchMovies(mood, 100)
 }
 
 /**
@@ -55,7 +56,7 @@ export async function getMoviesByMoods(moods: Mood[]): Promise<Movie[]> {
 
     const { data, error } = await supabase
         .from("movies")
-        .select("id, title, poster_url, genre, year, overview, imdb_rating, mood")
+        .select("id, title, poster_url, genre, year, overview, imdb_rating, mood, ott_providers")
         .in("mood", unique)
         .order("id", { ascending: true })
 
@@ -75,7 +76,7 @@ export async function getMoviesByIds(ids: string[]): Promise<Movie[]> {
 
     const { data, error } = await supabase
         .from("movies")
-        .select("id, title, poster_url, genre, year, overview, imdb_rating, mood")
+        .select("id, title, poster_url, genre, year, overview, imdb_rating, mood, ott_providers")
         .in("id", ids)
 
     if (error) {
@@ -84,6 +85,37 @@ export async function getMoviesByIds(ids: string[]): Promise<Movie[]> {
     }
 
     return (data ?? []) as Movie[]
+}
+
+/**
+ * Get distinct OTT providers available for a given mood.
+ * Useful for populating filter options.
+ */
+export async function getAvailableProviders(mood?: Mood): Promise<string[]> {
+    let query = supabase
+        .from("movies")
+        .select("ott_providers")
+
+    if (mood) {
+        query = query.eq("mood", mood)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+        console.error("Failed to fetch providers:", error)
+        return []
+    }
+
+    const allProviders = new Set<string>()
+    for (const row of data ?? []) {
+        const providers = (row as { ott_providers: string[] | null }).ott_providers
+        if (providers) {
+            providers.forEach((p) => allProviders.add(p))
+        }
+    }
+
+    return Array.from(allProviders).sort()
 }
 
 /**

@@ -77,7 +77,28 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         if (moods.length === 0) return
 
         const pool = await getMoviesByMoods(moods)
-        const shuffled = shuffleWithSeed(pool, seed)
+
+        // Apply OTT filter if set
+        const ottJson = sessionStorage.getItem("selected_ott")
+        let filtered = pool
+
+        if (ottJson) {
+            try {
+                const selectedOtt = JSON.parse(ottJson) as string[]
+                if (selectedOtt.length > 0) {
+                    filtered = pool.filter((m) => {
+                        // Keep movies with no OTT data (empty/null) so we don't hide content
+                        if (!m.ott_providers || m.ott_providers.length === 0) return true
+                        // Keep if the movie is on ANY of the selected platforms (OR logic)
+                        return m.ott_providers.some((p) => selectedOtt.includes(p))
+                    })
+                }
+            } catch {
+                // Invalid JSON, ignore
+            }
+        }
+
+        const shuffled = shuffleWithSeed(filtered, seed)
         setMovies(shuffled)
     }, [])
 

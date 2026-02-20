@@ -120,13 +120,24 @@ export function MovieCard({ movie, onSwipe, index, disabled }: MovieCardProps) {
                         </h2>
 
                         {/* Genres */}
-                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
                             {(Array.isArray(movie.genre) ? movie.genre : [movie.genre]).map((g, i) => (
                                 <span key={i} className="text-[#F5C518] text-[10px] font-bold uppercase tracking-[0.2em]">
                                     {g}
                                 </span>
                             ))}
                         </div>
+
+                        {/* OTT Providers */}
+                        {movie.ott_providers && movie.ott_providers.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                                {movie.ott_providers.map((provider, i) => (
+                                    <span key={i} className="bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10">
+                                        {provider}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Synopsis - tappable */}
                         <div
