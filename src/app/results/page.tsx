@@ -39,8 +39,14 @@ export default function ResultsPage() {
 
                 <div className="flex-1 space-y-4 overflow-y-auto pb-24 scrollbar-hide">
                     {likes.length === 0 ? (
-                        <div className="text-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20">
+                        <div className="text-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20 space-y-6">
                             <p className="text-zinc-500 font-medium">No movies liked. Tough crowd!</p>
+                            <Button
+                                onClick={() => router.push("/")}
+                                className="h-12 px-8 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02]"
+                            >
+                                Start Over
+                            </Button>
                         </div>
                     ) : (
                         likes.map((movie) => (

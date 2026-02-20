@@ -5,15 +5,17 @@ import Image from "next/image"
 import { Movie } from "@/lib/movies"
 import { useState } from "react"
 import { X, Heart } from "lucide-react"
+import { SynopsisOverlay } from "./SynopsisOverlay"
 
 interface MovieCardProps {
     movie: Movie
     onSwipe: (direction: "left" | "right") => void
-    index: number // Stack index to control z-index
+    index: number
 }
 
 export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
     const [exitX, setExitX] = useState<number | null>(null)
+    const [synopsisOpen, setSynopsisOpen] = useState(false)
     const x = useMotionValue(0)
     const rotate = useTransform(x, [-200, 200], [-25, 25])
     const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0.5, 1, 1, 1, 0.5])
@@ -23,6 +25,7 @@ export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
     const leftOpacity = useTransform(x, [-150, 0], [0.5, 0])
 
     const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        if (synopsisOpen) return
         if (info.offset.x > 100) {
             setExitX(200)
             onSwipe("right")
@@ -32,75 +35,120 @@ export function MovieCard({ movie, onSwipe, index }: MovieCardProps) {
         }
     }
 
+    const handleSynopsisTap = (e: React.MouseEvent | React.TouchEvent) => {
+        e.stopPropagation()
+        e.preventDefault()
+        setSynopsisOpen(true)
+    }
+
     // Only the top card (index 0) is interactive
     const isFront = index === 0
 
+    // Truncate overview for card display
+    const truncatedOverview = movie.overview.length > 90
+        ? movie.overview.substring(0, 90) + "..."
+        : movie.overview
+
     return (
-        <motion.div
-            style={{
-                width: "100%",
-                maxWidth: "350px",
-                height: "500px",
-                position: "absolute",
-                top: 0,
-                x: isFront ? x : 0,
-                rotate: isFront ? rotate : 0,
-                opacity: isFront ? 1 : 1 - index * 0.05,
-                zIndex: 100 - index,
-                scale: 1 - index * 0.05,
-                y: index * 15,
-            }}
-            drag={isFront ? "x" : false}
-            dragConstraints={{ left: 0, right: 0 }}
-            onDragEnd={handleDragEnd}
-            animate={exitX !== null ? { x: exitX * 2, opacity: 0 } : {}}
-            transition={{ duration: 0.2 }}
-            className="relative rounded-3xl overflow-hidden shadow-2xl bg-zinc-900 border border-zinc-800 cursor-grab active:cursor-grabbing"
-        >
-            {/* Swipe Feedback Overlay - RIGHT (Like) */}
+        <>
             <motion.div
-                style={{ opacity: rightOpacity }}
-                className="absolute inset-0 bg-green-500/30 z-20 flex items-center justify-center pointer-events-none"
+                style={{
+                    width: "100%",
+                    maxWidth: "350px",
+                    height: "500px",
+                    position: "absolute",
+                    top: 0,
+                    x: isFront ? x : 0,
+                    rotate: isFront ? rotate : 0,
+                    opacity: isFront ? 1 : 1 - index * 0.05,
+                    zIndex: 100 - index,
+                    scale: 1 - index * 0.05,
+                    y: index * 15,
+                }}
+                drag={isFront && !synopsisOpen ? "x" : false}
+                dragConstraints={{ left: 0, right: 0 }}
+                onDragEnd={handleDragEnd}
+                animate={exitX !== null ? { x: exitX * 2, opacity: 0 } : {}}
+                transition={{ duration: 0.2 }}
+                className="relative rounded-3xl overflow-hidden shadow-2xl bg-zinc-900 border border-zinc-800 cursor-grab active:cursor-grabbing"
             >
-                <Heart className="w-32 h-32 text-white fill-current drop-shadow-lg" />
-            </motion.div>
+                {/* Swipe Feedback Overlay - RIGHT (Like) */}
+                <motion.div
+                    style={{ opacity: rightOpacity }}
+                    className="absolute inset-0 bg-green-500/30 z-20 flex items-center justify-center pointer-events-none"
+                >
+                    <Heart className="w-32 h-32 text-white fill-current drop-shadow-lg" />
+                </motion.div>
 
-            {/* Swipe Feedback Overlay - LEFT (Pass) */}
-            <motion.div
-                style={{ opacity: leftOpacity }}
-                className="absolute inset-0 bg-red-600/30 z-20 flex items-center justify-center pointer-events-none"
-            >
-                <X className="w-32 h-32 text-white drop-shadow-lg" />
-            </motion.div>
+                {/* Swipe Feedback Overlay - LEFT (Pass) */}
+                <motion.div
+                    style={{ opacity: leftOpacity }}
+                    className="absolute inset-0 bg-red-600/30 z-20 flex items-center justify-center pointer-events-none"
+                >
+                    <X className="w-32 h-32 text-white drop-shadow-lg" />
+                </motion.div>
 
-            {/* Movie Poster */}
-            <div className="relative w-full h-full">
-                <Image
-                    src={movie.poster_url}
-                    alt={movie.title}
-                    fill
-                    className="object-cover"
-                    priority={index < 2} // Priority load top 2 cards
-                    draggable={false}
-                />
+                {/* Movie Poster */}
+                <div className="relative w-full h-full">
+                    <Image
+                        src={movie.poster_url}
+                        alt={movie.title}
+                        fill
+                        className="object-cover"
+                        priority={index < 2}
+                        draggable={false}
+                    />
 
-                {/* Gradient & Text Content */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent opacity-90" />
+                    {/* Gradient & Text Content */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
-                <div className="absolute bottom-0 w-full p-8 pt-20 text-white z-10">
-                    <h2 className="text-4xl font-black uppercase leading-none tracking-tighter shadow-black drop-shadow-md mb-3">
-                        {movie.title}
-                    </h2>
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-bold tracking-wide">
-                        <span className="bg-white text-black px-2 py-0.5 rounded-md">
-                            {movie.year}
-                        </span>
-                        <span className="text-zinc-300 uppercase tracking-wider text-xs">
-                            {Array.isArray(movie.genre) ? movie.genre.join(' • ') : movie.genre}
-                        </span>
+                    <div className="absolute bottom-0 w-full p-6 pt-16 text-white z-10">
+                        {/* IMDb Rating + Year */}
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="inline-flex items-center gap-1 bg-[#F5C518] text-black px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none">
+                                IMDb <span className="text-xs font-black">{movie.imdb_rating}</span>
+                            </span>
+                            <span className="text-zinc-400 text-sm font-semibold tracking-wider">
+                                {movie.year}
+                            </span>
+                        </div>
+
+                        {/* Title */}
+                        <h2 className="text-3xl font-black uppercase leading-none tracking-tighter drop-shadow-md mb-2">
+                            {movie.title}
+                        </h2>
+
+                        {/* Genres */}
+                        <div className="flex flex-wrap items-center gap-3 mb-3">
+                            {(Array.isArray(movie.genre) ? movie.genre : [movie.genre]).map((g, i) => (
+                                <span key={i} className="text-[#F5C518] text-[10px] font-bold uppercase tracking-[0.2em]">
+                                    {g}
+                                </span>
+                            ))}
+                        </div>
+
+                        {/* Synopsis - tappable */}
+                        <div
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={handleSynopsisTap}
+                            className="cursor-pointer select-none"
+                        >
+                            <p className="text-zinc-400 text-sm leading-relaxed line-clamp-2">
+                                {truncatedOverview}
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </motion.div>
+            </motion.div>
+
+            {/* Synopsis Full-Screen Overlay */}
+            {isFront && (
+                <SynopsisOverlay
+                    movie={movie}
+                    isOpen={synopsisOpen}
+                    onClose={() => setSynopsisOpen(false)}
+                />
+            )}
+        </>
     )
 }

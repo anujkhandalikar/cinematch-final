@@ -38,6 +38,8 @@ export default function SoloPage() {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer)
+                    // Force-close nudge overlay if open
+                    setShowNudge(false)
                     // Use ref to get latest liked movies
                     sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
                     router.push("/results")
