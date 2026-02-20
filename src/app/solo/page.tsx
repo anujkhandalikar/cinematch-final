@@ -38,6 +38,8 @@ export default function SoloPage() {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
                     clearInterval(timer)
+                    // Force-close nudge overlay if open
+                    setShowNudge(false)
                     // Use ref to get latest liked movies
                     sessionStorage.setItem("solo_results", JSON.stringify(likedMoviesRef.current))
                     router.push("/results")
@@ -83,17 +85,23 @@ export default function SoloPage() {
         <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
-            <header className="w-full flex items-center justify-between mb-4 z-10 max-w-md mx-auto pt-4 relative">
-                <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
-                    <ArrowLeft className="w-6 h-6" />
-                </Button>
-                <div className="flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2 border border-zinc-800 shadow-xl">
-                    <Clock className="w-4 h-4 text-red-600" />
-                    <span className={`font-black text-lg tracking-widest tabular-nums ${timeLeft < 30 ? "text-red-500 animate-pulse" : "text-white"}`}>
-                        {formatTime(timeLeft)}
-                    </span>
+            <header className="w-full grid grid-cols-3 items-center mb-4 z-10 max-w-md mx-auto pt-4 relative">
+                <div className="flex justify-start">
+                    <Button variant="ghost" size="icon" onClick={() => router.push("/")} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
+                        <ArrowLeft className="w-6 h-6" />
+                    </Button>
                 </div>
-                <div className="w-12" /> {/* Spacer */}
+                {/* Center spacer */}
+                <div />
+                {/* Timer on the right */}
+                <div className="flex justify-end">
+                    <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2 border shadow-xl transition-colors duration-500 ${timeLeft < 30 ? "border-red-600/60 shadow-[0_0_20px_-5px_rgba(220,38,38,0.4)]" : "border-zinc-800"}`}>
+                        <Clock className={`w-4 h-4 transition-colors duration-500 ${timeLeft < 30 ? "text-red-400" : "text-red-600"}`} />
+                        <span className={`font-black text-lg tracking-widest tabular-nums transition-colors duration-500 ${timeLeft < 30 ? "text-red-500 animate-pulse" : "text-white"}`}>
+                            {formatTime(timeLeft)}
+                        </span>
+                    </div>
+                </div>
             </header>
 
             <div className="flex-1 w-full flex items-center justify-center relative z-10">

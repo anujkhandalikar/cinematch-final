@@ -46,12 +46,7 @@ export function SwipeDeck({ movies, onSwipe, onEmpty }: SwipeDeckProps) {
                 ))}
             </AnimatePresence>
 
-            {activeMovies.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-card/50 rounded-xl border border-dashed border-border text-muted-foreground animate-pulse">
-                    <p>No more movies!</p>
-                    <p className="text-sm">Wait for the timer...</p>
-                </div>
-            )}
+
         </div>
     )
 }
