@@ -601,7 +601,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     if (status === "waiting") {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black text-white dot-pattern relative">
+            <div className="flex flex-col items-center justify-center h-[calc(100dvh-50px)] overflow-hidden p-4 bg-black text-white dot-pattern relative">
                 <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
                 <motion.div
@@ -777,36 +777,40 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     if (status === "active" || status === "paused") {
         return (
-            <div className="flex flex-col h-[100dvh] overflow-hidden p-4 bg-black text-white dot-pattern relative">
+            <div className="flex flex-col items-center justify-between h-[calc(100dvh-50px)] overflow-hidden p-4 bg-black text-white dot-pattern relative">
                 <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
-                <header className="w-full grid grid-cols-3 items-center shrink-0 mb-4 z-50 max-w-md mx-auto pt-4 relative">
+                <header className="w-full grid grid-cols-3 items-center shrink-0 mb-2 z-50 max-w-md mx-auto pt-2 relative">
                     <div />
                     <div />
                     <div className="flex justify-end">
-                        <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2.5 border shadow-xl transition-colors duration-500 ${timeLeft <= 30
+                        <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-3 py-1.5 border shadow-xl transition-colors duration-500 ${timeLeft <= 30
                             ? "border-red-600/60 shadow-[0_0_20px_-5px_rgba(220,38,38,0.4)]"
                             : "border-zinc-800"
                             }`}>
                             <Clock className={`w-4 h-4 transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-red-600"}`} />
-                            <span className={`text-sm font-black tracking-widest tabular-nums transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-zinc-300"
+                            <span className={`text-base font-black tracking-widest tabular-nums transition-colors duration-500 ${timeLeft <= 30 ? "text-red-400" : "text-zinc-300"
                                 }`}>{formatTime(timeLeft)}</span>
                         </div>
                     </div>
                 </header>
 
-                <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center relative z-10">
-                    <SwipeDeck
-                        movies={movies}
-                        onSwipe={handleSwipe}
-                        onEmpty={handleEmpty}
-                        disabled={status === "paused"}
-                        selectedOtt={selectedOtt}
-                    />
+                <div className="flex-1 w-full relative z-10">
+                    <div className="absolute inset-0 flex items-center justify-center py-2 pointer-events-none">
+                        <div className="h-full aspect-[2/3] pointer-events-auto">
+                            <SwipeDeck
+                                movies={movies}
+                                onSwipe={handleSwipe}
+                                onEmpty={handleEmpty}
+                                disabled={status === "paused"}
+                                selectedOtt={selectedOtt}
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                <div className="w-full shrink-0 mt-4 mb-2 space-y-4 max-w-md mx-auto relative z-10">
-                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
+                <div className="w-full shrink-0 mt-2 mb-1 space-y-2 max-w-md mx-auto relative z-10">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                         <span>{myLikedCount} liked</span>
                         <span>{Math.max(0, movies.length - swipedCount)} of {movies.length} remaining</span>
                     </div>

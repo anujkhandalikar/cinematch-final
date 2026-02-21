@@ -43,7 +43,9 @@ export function SwipeDeck({ movies, onSwipe, onEmpty, disabled, selectedOtt }: S
     const visibleMovies = activeMovies.slice(0, 3)
 
     return (
-        <div className="relative h-full aspect-[2/3] max-w-full sm:max-w-[400px] max-h-[650px] flex items-center justify-center mx-auto touch-none">
+        <div
+            className="relative w-full h-full max-w-full sm:max-w-[400px] max-h-[650px] flex items-center justify-center mx-auto touch-none"
+        >
             <AnimatePresence>
                 {visibleMovies.map((movie, index) => (
                     <MovieCard

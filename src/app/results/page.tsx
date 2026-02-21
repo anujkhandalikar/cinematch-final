@@ -87,7 +87,7 @@ export default function ResultsPage() {
                     </p>
                 </header>
 
-                <div className="pb-28">
+                <div className="pb-20">
                     {likes.length === 0 ? (
                         <div className="text-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20 space-y-6">
                             <p className="text-zinc-500 font-medium">No movies liked. Tough crowd!</p>
@@ -117,7 +117,7 @@ export default function ResultsPage() {
                                                 e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                                             }
                                         }}
-                                        className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[65vw] md:w-auto snap-center"
+                                        className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-auto snap-center"
                                         initial={!hasWiggled ? { x: 50, opacity: 0 } : false}
                                         animate={{
                                             x: 0,
