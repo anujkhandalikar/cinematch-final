@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { motion } from "framer-motion"
 
 import Image from "next/image"
-import { Home } from "lucide-react"
+import { Home, Play } from "lucide-react"
 import { trackResultsViewed, trackResultMovieClick, trackResultsHome, trackResultsStartOver } from "@/lib/analytics"
 
 export default function ResultsPage() {
@@ -144,7 +144,7 @@ export default function ResultsPage() {
                                         )}
 
                                         {/* Poster */}
-                                        <div className="relative aspect-[2/3] w-full">
+                                        <div className="relative w-full h-full">
                                             <Image
                                                 src={movie.poster_url}
                                                 alt={movie.title}
