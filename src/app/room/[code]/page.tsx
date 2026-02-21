@@ -777,7 +777,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     if (status === "active" || status === "paused") {
         return (
-            <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern relative">
+            <div className="flex flex-col h-[100dvh] overflow-hidden p-4 bg-black text-white dot-pattern relative">
                 <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
                 <header className="w-full grid grid-cols-3 items-center shrink-0 mb-4 z-50 max-w-md mx-auto pt-4 relative">
