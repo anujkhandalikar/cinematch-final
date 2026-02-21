@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { type Movie, getMoviesByIds } from "@/lib/movies"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,29 @@ export default function ResultsPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [isDuo, setIsDuo] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const carouselRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!carouselRef.current || likes.length === 0) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (window.innerWidth >= 768) return;
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+                    const id = entry.target.getAttribute('data-id');
+                    if (id) setSelectedId(id);
+                }
+            });
+        }, {
+            root: carouselRef.current,
+            threshold: 0.5
+        });
+
+        const children = Array.from(carouselRef.current.children);
+        children.forEach(child => observer.observe(child));
+
+        return () => observer.disconnect();
+    }, [likes]);
 
     useEffect(() => {
         const duoResults = sessionStorage.getItem("duo_results")
@@ -79,23 +102,33 @@ export default function ResultsPage() {
                             </Button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+                        <div
+                            ref={carouselRef}
+                            className="flex md:grid md:grid-cols-3 gap-3 md:gap-5 overflow-x-auto snap-x snap-mandatory items-center px-[12vw] md:px-0 pb-8 pt-4 md:pb-0 md:pt-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                        >
                             {likes.map((movie) => {
                                 const isSelected = movie.id === selectedId
                                 return (
                                     <motion.div
                                         key={movie.id}
+                                        data-id={movie.id}
                                         layout
-                                        onClick={() => { trackResultMovieClick(movie.id, movie.title); setSelectedId(movie.id); }}
-                                        className="relative cursor-pointer rounded-2xl overflow-hidden group"
+                                        onClick={(e) => {
+                                            trackResultMovieClick(movie.id, movie.title);
+                                            setSelectedId(movie.id);
+                                            if (window.innerWidth < 768) {
+                                                e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                            }
+                                        }}
+                                        className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[76vw] md:w-auto snap-center"
                                         animate={{
-                                            scale: isSelected ? 1.0 : 0.95,
-                                            opacity: isSelected ? 1 : 0.5,
+                                            scale: isSelected ? 1.0 : 0.85,
+                                            opacity: isSelected ? 1 : 0.3,
                                         }}
                                         whileHover={!isSelected ? { opacity: 0.7 } : {}}
                                         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
                                         style={{
-                                            filter: isSelected ? "blur(0px)" : "blur(4px)",
+                                            filter: isSelected ? "blur(0px)" : "blur(8px)",
                                         }}
                                     >
                                         {/* Glow border for selected */}
@@ -165,13 +198,26 @@ export default function ResultsPage() {
                 </div>
 
                 <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black to-transparent z-20">
-                    <div className="max-w-3xl mx-auto">
+                    <div className="max-w-3xl mx-auto flex gap-4">
                         <Button
-                            className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
+                            className="flex-1 h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
                             variant="outline"
                             onClick={() => { trackResultsHome(likes.length); router.push("/"); }}
                         >
                             <Home className="w-5 h-5 mr-2" /> Home
+                        </Button>
+                        <Button
+                            className="flex-1 h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!selectedId}
+                            onClick={() => {
+                                const selectedMovie = likes.find(m => m.id === selectedId);
+                                if (selectedMovie) {
+                                    const query = encodeURIComponent(`${selectedMovie.title} movie ${selectedMovie.year} watch`);
+                                    window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                                }
+                            }}
+                        >
+                            Watch Now
                         </Button>
                     </div>
                 </div>
