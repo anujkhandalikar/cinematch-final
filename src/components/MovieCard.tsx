@@ -4,7 +4,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion"
 import Image from "next/image"
 import { Movie } from "@/lib/movies"
 import { useState } from "react"
-import { X, Heart } from "lucide-react"
+import { X, Heart, Info } from "lucide-react"
 import { SynopsisOverlay } from "./SynopsisOverlay"
 import { trackSynopsisOpen, trackSynopsisClose } from "@/lib/analytics"
 
@@ -19,6 +19,7 @@ interface MovieCardProps {
 export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: MovieCardProps) {
     const [exitX, setExitX] = useState<number | null>(null)
     const [synopsisOpen, setSynopsisOpen] = useState(false)
+    const [isDragging, setIsDragging] = useState(false)
     const x = useMotionValue(0)
     const rotate = useTransform(x, [-200, 200], [-25, 25])
 
@@ -69,7 +70,8 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
                 }}
                 drag={isFront && !synopsisOpen && !disabled ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                onDragEnd={handleDragEnd}
+                onDragStart={() => setIsDragging(true)}
+                onDragEnd={(event, info) => { setIsDragging(false); handleDragEnd(event, info); }}
                 animate={exitX !== null ? { x: exitX * 2, opacity: 0 } : {}}
                 transition={{ duration: 0.2 }}
                 className="relative rounded-3xl overflow-hidden shadow-2xl bg-zinc-900 border border-zinc-800 cursor-grab active:cursor-grabbing"
@@ -161,6 +163,17 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
                             </p>
                         </div>
                     </div>
+
+                    {/* Info icon — bottom-right, only on front card when at rest */}
+                    {isFront && !isDragging && (
+                        <button
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={handleSynopsisTap}
+                            className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white"
+                        >
+                            <Info className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                 </div>
             </motion.div>
 

@@ -182,7 +182,7 @@ export default function MoodPage() {
             {/* Action buttons */}
             <div className="flex gap-3 pt-2">
                 <Button
-                    className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/40"
+                    className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase tracking-tighter rounded-full transition-all shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] hover:scale-105"
                     onClick={selectedProviders.length > 0 ? handleContinue : handleSkip}
                 >
                     {selectedProviders.length > 0 ? (
