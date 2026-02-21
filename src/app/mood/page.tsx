@@ -65,7 +65,7 @@ export default function MoodPage() {
     // Fetch OTT providers when a mood is selected
     useEffect(() => {
         if (!selectedMood) return
-
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoadingProviders(true)
         setSelectedProviders([])
         getAvailableProviders(selectedMood).then((providers) => {
@@ -124,9 +124,86 @@ export default function MoodPage() {
         }
     }
 
+    const renderOttFilterContent = (isMobile: boolean) => (
+        <div className={`space-y-4 ${isMobile ? "" : "border-t border-zinc-800/60 pt-6"}`}>
+            <div className="flex items-center gap-3">
+                <Tv className="w-5 h-5 text-zinc-500" />
+                <div>
+                    <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                        Where do you watch?
+                    </h2>
+                    <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase">
+                        Optional — filter by platform
+                    </p>
+                </div>
+            </div>
+
+            {loadingProviders ? (
+                <div className="flex justify-center py-6">
+                    <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+            ) : availableProviders.length === 0 ? (
+                <p className="text-zinc-600 text-xs text-center py-4">
+                    No streaming data for this mood yet
+                </p>
+            ) : (
+                <div className={`flex gap-2 ${isMobile ? "overflow-x-auto pb-2 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" : "flex-wrap"}`}>
+                    {availableProviders.map((provider) => {
+                        const isSelected = selectedProviders.includes(provider)
+                        const gradient = PROVIDER_COLORS[provider] ?? "from-zinc-500/20 to-zinc-900/5"
+
+                        return (
+                            <motion.button
+                                key={provider}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r ${gradient} border transition-all duration-200 flex-shrink-0 whitespace-nowrap ${isSelected
+                                        ? "border-red-500/60 ring-1 ring-red-500/30"
+                                        : "border-zinc-800 hover:border-zinc-600"
+                                    }`}
+                                onClick={() => toggleProvider(provider)}
+                            >
+                                <div className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${isSelected
+                                        ? "bg-red-600 border-red-600"
+                                        : "border-zinc-600 group-hover:border-zinc-400"
+                                    }`}>
+                                    {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                                </div>
+                                <span className={`font-bold text-xs uppercase tracking-wide transition-colors ${isSelected ? "text-white" : "text-zinc-400 group-hover:text-white"
+                                    }`}>
+                                    {provider}
+                                </span>
+                            </motion.button>
+                        )
+                    })}
+                </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex gap-3 pt-2">
+                <Button
+                    className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/40"
+                    onClick={selectedProviders.length > 0 ? handleContinue : handleSkip}
+                >
+                    {selectedProviders.length > 0 ? (
+                        <>
+                            <Check className="w-4 h-4 mr-2" />
+                            Continue ({selectedProviders.length} selected)
+                        </>
+                    ) : (
+                        <>
+                            <SkipForward className="w-4 h-4 mr-2" />
+                            Continue — All Platforms
+                        </>
+                    )}
+                </Button>
+            </div>
+        </div>
+    )
+
     return (
-        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="flex min-h-screen items-start justify-center pt-8 px-4 pb-32 md:pb-8 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -172,10 +249,10 @@ export default function MoodPage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.15 + i * 0.08 }}
                                         className={`group relative flex items-center md:flex-col md:justify-center md:py-12 md:px-4 md:aspect-[3/4] p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b ${mood.gradient} border transition-all duration-300 text-left md:text-center w-full overflow-hidden ${isSelected
-                                                ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
-                                                : selectedMood && !isSelected
-                                                    ? "border-zinc-800/40 opacity-50"
-                                                    : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.02]"
+                                            ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
+                                            : selectedMood && !isSelected
+                                                ? "border-zinc-800/40 opacity-50"
+                                                : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.02]"
                                             }`}
                                         onClick={() => handleMoodSelect(mood.id)}
                                     >
@@ -206,96 +283,42 @@ export default function MoodPage() {
                             })}
                         </motion.div>
 
-                        {/* OTT Filter Section — appears after mood selection */}
-                        <AnimatePresence>
-                            {selectedMood && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className="border-t border-zinc-800/60 pt-6 space-y-4">
-                                        <div className="flex items-center gap-3">
-                                            <Tv className="w-5 h-5 text-zinc-500" />
-                                            <div>
-                                                <h2 className="text-sm font-black uppercase tracking-wider text-white">
-                                                    Where do you watch?
-                                                </h2>
-                                                <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase">
-                                                    Optional — filter by platform
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {loadingProviders ? (
-                                            <div className="flex justify-center py-6">
-                                                <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                                            </div>
-                                        ) : availableProviders.length === 0 ? (
-                                            <p className="text-zinc-600 text-xs text-center py-4">
-                                                No streaming data for this mood yet
-                                            </p>
-                                        ) : (
-                                            <div className="flex flex-wrap gap-2">
-                                                {availableProviders.map((provider) => {
-                                                    const isSelected = selectedProviders.includes(provider)
-                                                    const gradient = PROVIDER_COLORS[provider] ?? "from-zinc-500/20 to-zinc-900/5"
-
-                                                    return (
-                                                        <motion.button
-                                                            key={provider}
-                                                            initial={{ opacity: 0, scale: 0.9 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r ${gradient} border transition-all duration-200 ${isSelected
-                                                                    ? "border-red-500/60 ring-1 ring-red-500/30"
-                                                                    : "border-zinc-800 hover:border-zinc-600"
-                                                                }`}
-                                                            onClick={() => toggleProvider(provider)}
-                                                        >
-                                                            <div className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${isSelected
-                                                                    ? "bg-red-600 border-red-600"
-                                                                    : "border-zinc-600 group-hover:border-zinc-400"
-                                                                }`}>
-                                                                {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
-                                                            </div>
-                                                            <span className={`font-bold text-xs uppercase tracking-wide transition-colors ${isSelected ? "text-white" : "text-zinc-400 group-hover:text-white"
-                                                                }`}>
-                                                                {provider}
-                                                            </span>
-                                                        </motion.button>
-                                                    )
-                                                })}
-                                            </div>
-                                        )}
-
-                                        {/* Action buttons */}
-                                        <div className="flex gap-3 pt-2">
-                                            <Button
-                                                className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full transition-all shadow-lg shadow-red-600/20 hover:shadow-red-600/40"
-                                                onClick={selectedProviders.length > 0 ? handleContinue : handleSkip}
-                                            >
-                                                {selectedProviders.length > 0 ? (
-                                                    <>
-                                                        <Check className="w-4 h-4 mr-2" />
-                                                        Continue ({selectedProviders.length} selected)
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <SkipForward className="w-4 h-4 mr-2" />
-                                                        Continue — All Platforms
-                                                    </>
-                                                )}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                        {/* Desktop OTT Filter Section */}
+                        <div className="hidden md:block">
+                            <AnimatePresence>
+                                {selectedMood && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: "auto" }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                                        className="overflow-hidden"
+                                    >
+                                        {renderOttFilterContent(false)}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                     </div>
                 </div>
             </motion.div>
+
+            {/* Mobile Sticky Bottom Bar */}
+            <div className="md:hidden">
+                <AnimatePresence>
+                    {selectedMood && (
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed inset-x-0 bottom-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-800/60 p-4 pb-8 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.5)]"
+                        >
+                            {renderOttFilterContent(true)}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     )
 }

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock } from "lucide-react"
 import { trackSessionStart, trackSessionComplete, trackSwipe, trackNudgeShown, trackNavBack } from "@/lib/analytics"
@@ -30,7 +29,9 @@ export default function SoloPage() {
 
     // Ref to always have the latest likedMovies (avoids stale closure in timer)
     const likedMoviesRef = useRef(likedMovies)
-    likedMoviesRef.current = likedMovies
+    useEffect(() => {
+        likedMoviesRef.current = likedMovies
+    }, [likedMovies])
 
     // Load mood-filtered movies on mount
     useEffect(() => {
@@ -155,39 +156,43 @@ export default function SoloPage() {
     }
 
     return (
-        <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="flex flex-col items-center justify-between h-[calc(100dvh-50px)] overflow-hidden p-4 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
-            <header className="w-full grid grid-cols-3 items-center mb-4 z-10 max-w-md mx-auto pt-4 relative">
+            <header className="w-full grid grid-cols-3 items-center shrink-0 mb-2 z-10 max-w-md mx-auto pt-2 relative">
                 <div className="flex justify-start">
-                    <Button variant="ghost" size="icon" onClick={() => { trackNavBack("solo"); router.push("/"); }} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
-                        <ArrowLeft className="w-6 h-6" />
+                    <Button variant="ghost" size="icon" onClick={() => { trackNavBack("solo"); router.push("/"); }} className="rounded-full w-10 h-10 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
+                        <ArrowLeft className="w-5 h-5" />
                     </Button>
                 </div>
                 {/* Center spacer */}
                 <div />
                 {/* Timer on the right */}
                 <div className="flex justify-end">
-                    <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-5 py-2 border shadow-xl transition-colors duration-500 ${timeLeft < 30 ? "border-red-600/60 shadow-[0_0_20px_-5px_rgba(220,38,38,0.4)]" : "border-zinc-800"}`}>
+                    <div className={`flex items-center gap-2 bg-zinc-900/80 backdrop-blur-md rounded-full px-3 py-1.5 border shadow-xl transition-colors duration-500 ${timeLeft < 30 ? "border-red-600/60 shadow-[0_0_20px_-5px_rgba(220,38,38,0.4)]" : "border-zinc-800"}`}>
                         <Clock className={`w-4 h-4 transition-colors duration-500 ${timeLeft < 30 ? "text-red-400" : "text-red-600"}`} />
-                        <span className={`font-black text-lg tracking-widest tabular-nums transition-colors duration-500 ${timeLeft < 30 ? "text-red-500 animate-pulse" : "text-white"}`}>
+                        <span className={`font-black text-base tracking-widest tabular-nums transition-colors duration-500 ${timeLeft < 30 ? "text-red-500 animate-pulse" : "text-white"}`}>
                             {formatTime(timeLeft)}
                         </span>
                     </div>
                 </div>
             </header>
 
-            <div className={`flex-1 w-full flex items-center justify-center relative z-10 ${showNudge ? "pointer-events-none" : ""}`}>
-                <SwipeDeck
-                    movies={movies}
-                    onSwipe={handleSwipe}
-                    onEmpty={() => finishSession("deck_empty")}
-                    selectedOtt={selectedOtt}
-                />
+            <div className={`flex-1 w-full relative z-10 ${showNudge ? "pointer-events-none" : ""}`}>
+                <div className="absolute inset-0 flex items-center justify-center py-2 pointer-events-none">
+                    <div className="h-full aspect-[2/3] pointer-events-auto">
+                        <SwipeDeck
+                            movies={movies}
+                            onSwipe={handleSwipe}
+                            onEmpty={() => finishSession("deck_empty")}
+                            selectedOtt={selectedOtt}
+                        />
+                    </div>
+                </div>
             </div>
 
-            <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
-                <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
+            <div className="w-full shrink-0 mt-2 mb-1 space-y-2 max-w-md mx-auto relative z-10">
+                <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                     <span>{likedMovies.length} liked</span>
                     <span>{movies.length - swipedCount} remaining</span>
                 </div>
@@ -199,12 +204,14 @@ export default function SoloPage() {
                     />
                 </div>
 
-                <Button
-                    className="w-full h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold uppercase tracking-wider rounded-full transition-all"
-                    onClick={() => finishSession("manual")}
-                >
-                    Review Shortlist ({likedMovies.length})
-                </Button>
+                {likedMovies.length > 0 && (
+                    <Button
+                        className="w-full h-11 text-sm bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 font-bold uppercase tracking-wider rounded-full transition-all"
+                        onClick={() => finishSession("manual")}
+                    >
+                        Review Shortlist ({likedMovies.length})
+                    </Button>
+                )}
             </div>
 
             {/* S5 Nudge Overlay */}

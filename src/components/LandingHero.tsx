@@ -8,9 +8,9 @@ import { trackLandingCTA } from '@/lib/analytics';
 
 export default function LandingHero() {
     return (
-        <div className="relative min-h-screen flex flex-col items-center overflow-hidden bg-black text-white dot-pattern">
+        <div className="relative min-h-screen flex flex-col items-center bg-black text-white dot-pattern">
             {/* Background Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             {/* Initial Hero Section */}
             <div className="relative z-10 container px-4 md:px-6 pt-32 pb-16 flex flex-col items-center text-center space-y-8">

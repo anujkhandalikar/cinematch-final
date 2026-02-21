@@ -15,14 +15,14 @@ interface SwipeDeckProps {
 
 export function SwipeDeck({ movies, onSwipe, onEmpty, disabled, selectedOtt }: SwipeDeckProps) {
     const [activeMovies, setActiveMovies] = useState(movies)
-    const [history, setHistory] = useState<Movie[]>([]) // For potential Undo feature later
 
     // Sync activeMovies when the movies prop changes (e.g. async load for non-host)
     useEffect(() => {
         if (movies.length > 0 && activeMovies.length === 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setActiveMovies(movies)
         }
-    }, [movies])
+    }, [movies, activeMovies.length])
 
     const handleSwipe = (direction: "left" | "right") => {
         if (activeMovies.length === 0) return
@@ -43,7 +43,9 @@ export function SwipeDeck({ movies, onSwipe, onEmpty, disabled, selectedOtt }: S
     const visibleMovies = activeMovies.slice(0, 3)
 
     return (
-        <div className="relative w-full max-w-[350px] h-[500px] flex items-center justify-center">
+        <div
+            className="relative w-full h-full max-w-full sm:max-w-[400px] max-h-[650px] flex items-center justify-center mx-auto touch-none"
+        >
             <AnimatePresence>
                 {visibleMovies.map((movie, index) => (
                     <MovieCard
@@ -56,8 +58,6 @@ export function SwipeDeck({ movies, onSwipe, onEmpty, disabled, selectedOtt }: S
                     />
                 ))}
             </AnimatePresence>
-
-
         </div>
     )
 }

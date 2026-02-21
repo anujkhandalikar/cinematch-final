@@ -54,10 +54,10 @@ export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist }:
                             {/* Text */}
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-black uppercase tracking-tight text-white">
-                                    We've selected enough!
+                                    We&apos;ve selected enough!
                                 </h2>
                                 <p className="text-zinc-400 text-sm font-medium">
-                                    You've liked <span className="text-white font-bold">{likedCount}</span> movies so far.
+                                    You&apos;ve liked <span className="text-white font-bold">{likedCount}</span> movies so far.
                                     <br />
                                     Ready to see your shortlist?
                                 </p>

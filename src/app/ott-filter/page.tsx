@@ -98,8 +98,8 @@ export default function OTTFilterPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -166,15 +166,15 @@ export default function OTTFilterPage() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.1 + i * 0.05 }}
                                                 className={`group relative flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r ${config.gradient} border transition-all duration-300 text-left w-full overflow-hidden ${isSelected
-                                                        ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
-                                                        : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.01]"
+                                                    ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
+                                                    : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.01]"
                                                     }`}
                                                 onClick={() => toggleProvider(provider)}
                                             >
                                                 {/* Checkmark */}
                                                 <div className={`flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all duration-200 ${isSelected
-                                                        ? "bg-red-600 border-red-600"
-                                                        : "border-zinc-600 group-hover:border-zinc-400"
+                                                    ? "bg-red-600 border-red-600"
+                                                    : "border-zinc-600 group-hover:border-zinc-400"
                                                     }`}>
                                                     {isSelected && <Check className="w-4 h-4 text-white" />}
                                                 </div>
