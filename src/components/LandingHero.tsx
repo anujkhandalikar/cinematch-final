@@ -13,19 +13,7 @@ export default function LandingHero() {
             <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             {/* Initial Hero Section */}
-            <div className="relative z-10 container px-4 md:px-6 pt-32 pb-16 flex flex-col items-center text-center space-y-8">
-
-                {/* Top Badge */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-4"
-                >
-                    <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-400 uppercase tracking-widest backdrop-blur-sm">
-                        <Flame className="w-3 h-3 text-red-600 mr-2" />
-                        Stop Scrolling. Start Watching.
-                    </span>
-                </motion.div>
+            <div className="relative z-10 container px-4 md:px-6 pt-16 pb-16 flex flex-col items-center text-center space-y-8">
 
                 {/* Main Headline */}
                 <motion.h1
@@ -45,7 +33,7 @@ export default function LandingHero() {
                     transition={{ duration: 0.5, delay: 0.2 }}
                     className="max-w-xl text-zinc-400 text-lg md:text-xl font-medium leading-relaxed"
                 >
-                    Decisions, simplified<br />
+                    Stop scrolling, start watching.<br />
                     Based on <a href="https://drive.google.com/file/d/1tDLNhn8A9PWnxelA1sJxlSGup9brrfTp/view?usp=sharing" target="_blank" rel="noopener noreferrer" className="text-red-500 underline underline-offset-2 hover:text-red-400 transition-colors">research</a>.
                 </motion.p>
 

@@ -4,11 +4,11 @@ import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { type Movie, getMoviesByIds } from "@/lib/movies"
 import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 
 import Image from "next/image"
 import { trackResultsViewed, trackResultMovieClick, trackResultsStartOver } from "@/lib/analytics"
-import { Play } from "lucide-react"
+import { Play, Info } from "lucide-react"
 
 export default function ResultsPage() {
     const router = useRouter()
@@ -17,6 +17,7 @@ export default function ResultsPage() {
     const [isDuo, setIsDuo] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
     const [hasWiggled, setHasWiggled] = useState(false)
+    const [synopsisOpenId, setSynopsisOpenId] = useState<string | null>(null)
     const carouselRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -27,7 +28,10 @@ export default function ResultsPage() {
             entries.forEach(entry => {
                 if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
                     const id = entry.target.getAttribute('data-id');
-                    if (id) setSelectedId(id);
+                    if (id) {
+                        setSelectedId(id);
+                        setSynopsisOpenId(null);
+                    }
                 }
             });
         }, {
@@ -112,10 +116,15 @@ export default function ResultsPage() {
                                             data-id={movie.id}
                                             layout
                                             onClick={(e) => {
-                                                trackResultMovieClick(movie.id, movie.title);
-                                                setSelectedId(movie.id);
-                                                if (window.innerWidth < 768) {
-                                                    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                                if (isSelected) {
+                                                    if (synopsisOpenId === movie.id) setSynopsisOpenId(null);
+                                                } else {
+                                                    trackResultMovieClick(movie.id, movie.title);
+                                                    setSynopsisOpenId(null);
+                                                    setSelectedId(movie.id);
+                                                    if (window.innerWidth < 768) {
+                                                        e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                                    }
                                                 }
                                             }}
                                             className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] aspect-[2/3] md:w-auto md:aspect-[2/3] snap-center"
@@ -154,6 +163,37 @@ export default function ResultsPage() {
 
                                             {/* Gradient overlay */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+
+                                            {/* Info button — only on focused card, bottom-right */}
+                                            {isSelected && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSynopsisOpenId(synopsisOpenId === movie.id ? null : movie.id);
+                                                    }}
+                                                    className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white"
+                                                >
+                                                    <Info className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+
+                                            {/* Synopsis slide-up panel */}
+                                            <AnimatePresence>
+                                                {synopsisOpenId === movie.id && (
+                                                    <motion.div
+                                                        initial={{ y: "100%" }}
+                                                        animate={{ y: 0 }}
+                                                        exit={{ y: "100%" }}
+                                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                        className="absolute inset-x-0 bottom-0 h-[65%] z-20 bg-black/92 backdrop-blur-md p-4 flex flex-col overflow-hidden"
+                                                    >
+                                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 mb-2">Synopsis</p>
+                                                        <p className="text-sm text-zinc-300 leading-relaxed overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                                            {movie.overview || "No synopsis available."}
+                                                        </p>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
 
                                             {/* Info overlay at bottom */}
                                             <div className="absolute bottom-0 w-full p-5 z-10">
