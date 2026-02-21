@@ -5,7 +5,7 @@ export default function SiteHeader() {
         <header className="w-full flex justify-center py-3">
             <Link
                 href="/"
-                className="text-xl md:text-2xl font-black tracking-[0.2em] text-white/80 hover:text-white transition-colors uppercase drop-shadow-md"
+                className="text-xl md:text-2xl font-black tracking-[0.2em] text-white/80 hover:text-white transition-colors uppercase drop-shadow-md italic"
             >
                 CINEMATCH
             </Link>

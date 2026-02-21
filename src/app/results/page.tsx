@@ -217,28 +217,33 @@ export default function ResultsPage() {
                     )}
                 </div>
 
-                <div className="fixed bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black via-black to-transparent z-20">
-                    <div className="max-w-3xl mx-auto flex gap-3">
-                        <Button
-                            className="flex-1 h-12 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
-                            variant="outline"
-                            onClick={() => { trackResultsHome(likes.length); router.push("/"); }}
-                        >
-                            <Home className="w-4 h-4 mr-2" /> Home
-                        </Button>
-                        <Button
-                            className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={!selectedId}
-                            onClick={() => {
-                                const selectedMovie = likes.find(m => m.id === selectedId);
-                                if (selectedMovie) {
-                                    const query = encodeURIComponent(`${selectedMovie.title} movie ${selectedMovie.year} watch`);
-                                    window.open(`https://www.google.com/search?q=${query}`, '_blank');
-                                }
-                            }}
-                        >
-                            Watch Now
-                        </Button>
+                <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black to-transparent z-20">
+                    <div className="max-w-3xl mx-auto flex flex-col items-center gap-3">
+                        <div className="w-full flex gap-3">
+                            <Button
+                                className="flex-1 h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
+                                variant="outline"
+                                onClick={() => { trackResultsHome(likes.length); router.push("/"); }}
+                            >
+                                <Home className="w-5 h-5 mr-2" /> Home
+                            </Button>
+                            <Button
+                                className="flex-1 h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!selectedId}
+                                onClick={() => {
+                                    const selectedMovie = likes.find(m => m.id === selectedId);
+                                    if (selectedMovie) {
+                                        const query = encodeURIComponent(`${selectedMovie.title} movie ${selectedMovie.year} watch`);
+                                        window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                                    }
+                                }}
+                            >
+                                Watch Now
+                            </Button>
+                        </div>
+                        <div className="text-zinc-400 text-sm tracking-wide">
+                            Built with ❤️ by <a href="https://anujk.in" target="_blank" rel="noopener noreferrer" className="text-zinc-300 underline underline-offset-2 hover:text-white transition-colors">Anuj</a>
+                        </div>
                     </div>
                 </div>
             </div>
