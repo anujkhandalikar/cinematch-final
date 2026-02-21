@@ -15,6 +15,7 @@ export default function ResultsPage() {
     const [likes, setLikes] = useState<Movie[]>([])
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [isDuo, setIsDuo] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
         const duoResults = sessionStorage.getItem("duo_results")
@@ -32,11 +33,23 @@ export default function ResultsPage() {
                 if (likedMovies.length > 0) {
                     setSelectedId(likedMovies[0].id)
                 }
+                setIsLoading(false)
+            }).catch(() => {
+                setIsLoading(false)
             })
         } else {
             trackResultsViewed(mode, 0)
+            setIsLoading(false)
         }
     }, [])
+
+    if (isLoading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-black text-white dot-pattern">
+                <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+        )
+    }
 
     return (
         <div className="min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">

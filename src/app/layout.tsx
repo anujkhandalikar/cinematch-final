@@ -36,7 +36,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased text-foreground bg-background`}>
         <SiteHeader />
-        <main className="pt-20">{children}</main>
+        <main>{children}</main>
         <Toaster />
       </body>
     </html>
