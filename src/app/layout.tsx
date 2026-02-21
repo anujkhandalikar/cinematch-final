@@ -34,9 +34,9 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className={`${inter.variable} font-sans antialiased text-foreground bg-background`}>
+      <body className={`${inter.variable} font-sans antialiased text-foreground bg-background flex flex-col min-h-[100dvh]`}>
         <SiteHeader />
-        <main className="pt-20">{children}</main>
+        <main className="flex-1 flex flex-col">{children}</main>
         <Toaster />
       </body>
     </html>

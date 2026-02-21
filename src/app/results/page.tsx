@@ -39,18 +39,18 @@ export default function ResultsPage() {
     }, [])
 
     return (
-        <div className="h-[100dvh] md:min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
+        <div className="flex-1 md:min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
 
             <div className="relative z-10 max-w-3xl mx-auto flex flex-col h-full md:min-h-screen">
-                <header className="text-center space-y-2 md:space-y-4 pt-4 md:pt-12 pb-4 md:pb-8">
-                    <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">{isDuo ? "Mutual" : "Your"} <span className="text-red-600">Shortlist</span></h1>
-                    <p className="text-zinc-500 font-medium text-base md:text-lg">
+                <header className="text-center space-y-1 md:space-y-4 pt-2 md:pt-12 pb-2 md:pb-8">
+                    <h1 className="text-2xl md:text-5xl font-black uppercase tracking-tighter leading-none">{isDuo ? "Mutual" : "Your"} <span className="text-red-600">Shortlist</span></h1>
+                    <p className="text-zinc-500 font-medium text-sm md:text-lg">
                         {isDuo ? "You both liked" : "You liked"} <span className="text-white font-bold">{likes.length}</span> {likes.length === 1 ? "movie" : "movies"}.
                     </p>
                 </header>
 
-                <div className="flex-1 pb-28 overflow-y-auto scrollbar-hide">
+                <div className="flex-1 pb-24 overflow-y-auto scrollbar-hide">
                     {likes.length === 0 ? (
                         <div className="text-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20 space-y-6">
                             <p className="text-zinc-500 font-medium">No movies liked. Tough crowd!</p>
@@ -163,7 +163,7 @@ export default function ResultsPage() {
                             </div>
 
                             {/* Pagination Dots (Mobile Only) */}
-                            <div className="flex justify-center gap-2 mt-6 md:hidden">
+                            <div className="flex justify-center gap-2 mt-3 md:hidden">
                                 {likes.map((movie) => (
                                     <div
                                         key={`dot-${movie.id}`}
