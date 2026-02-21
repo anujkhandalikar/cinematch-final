@@ -19,8 +19,8 @@ export default function LobbyPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}

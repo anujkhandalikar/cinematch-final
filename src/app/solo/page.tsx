@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
-import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock } from "lucide-react"
 import { trackSessionStart, trackSessionComplete, trackSwipe, trackNudgeShown, trackNavBack } from "@/lib/analytics"
@@ -30,7 +29,9 @@ export default function SoloPage() {
 
     // Ref to always have the latest likedMovies (avoids stale closure in timer)
     const likedMoviesRef = useRef(likedMovies)
-    likedMoviesRef.current = likedMovies
+    useEffect(() => {
+        likedMoviesRef.current = likedMovies
+    }, [likedMovies])
 
     // Load mood-filtered movies on mount
     useEffect(() => {
@@ -155,10 +156,10 @@ export default function SoloPage() {
     }
 
     return (
-        <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
-            <header className="w-full grid grid-cols-3 items-center mb-4 z-10 max-w-md mx-auto pt-4 relative">
+            <header className="w-full grid grid-cols-3 items-center shrink-0 mb-4 z-10 max-w-md mx-auto pt-4 relative">
                 <div className="flex justify-start">
                     <Button variant="ghost" size="icon" onClick={() => { trackNavBack("solo"); router.push("/"); }} className="rounded-full w-12 h-12 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-colors">
                         <ArrowLeft className="w-6 h-6" />
@@ -177,7 +178,7 @@ export default function SoloPage() {
                 </div>
             </header>
 
-            <div className={`flex-1 w-full flex items-center justify-center relative z-10 ${showNudge ? "pointer-events-none" : ""}`}>
+            <div className={`flex-1 min-h-0 w-full flex items-center justify-center relative z-10 ${showNudge ? "pointer-events-none" : ""}`}>
                 <SwipeDeck
                     movies={movies}
                     onSwipe={handleSwipe}
@@ -186,7 +187,7 @@ export default function SoloPage() {
                 />
             </div>
 
-            <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
+            <div className="w-full shrink-0 mt-4 mb-2 space-y-4 max-w-md mx-auto relative z-10">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
                     <span>{likedMovies.length} liked</span>
                     <span>{movies.length - swipedCount} remaining</span>

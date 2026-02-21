@@ -65,7 +65,7 @@ export default function MoodPage() {
     // Fetch OTT providers when a mood is selected
     useEffect(() => {
         if (!selectedMood) return
-
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoadingProviders(true)
         setSelectedProviders([])
         getAvailableProviders(selectedMood).then((providers) => {
@@ -125,8 +125,8 @@ export default function MoodPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="flex min-h-screen items-start justify-center pt-8 p-4 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -172,10 +172,10 @@ export default function MoodPage() {
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.15 + i * 0.08 }}
                                         className={`group relative flex items-center md:flex-col md:justify-center md:py-12 md:px-4 md:aspect-[3/4] p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b ${mood.gradient} border transition-all duration-300 text-left md:text-center w-full overflow-hidden ${isSelected
-                                                ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
-                                                : selectedMood && !isSelected
-                                                    ? "border-zinc-800/40 opacity-50"
-                                                    : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.02]"
+                                            ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
+                                            : selectedMood && !isSelected
+                                                ? "border-zinc-800/40 opacity-50"
+                                                : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.02]"
                                             }`}
                                         onClick={() => handleMoodSelect(mood.id)}
                                     >
@@ -249,14 +249,14 @@ export default function MoodPage() {
                                                             initial={{ opacity: 0, scale: 0.9 }}
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r ${gradient} border transition-all duration-200 ${isSelected
-                                                                    ? "border-red-500/60 ring-1 ring-red-500/30"
-                                                                    : "border-zinc-800 hover:border-zinc-600"
+                                                                ? "border-red-500/60 ring-1 ring-red-500/30"
+                                                                : "border-zinc-800 hover:border-zinc-600"
                                                                 }`}
                                                             onClick={() => toggleProvider(provider)}
                                                         >
                                                             <div className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${isSelected
-                                                                    ? "bg-red-600 border-red-600"
-                                                                    : "border-zinc-600 group-hover:border-zinc-400"
+                                                                ? "bg-red-600 border-red-600"
+                                                                : "border-zinc-600 group-hover:border-zinc-400"
                                                                 }`}>
                                                                 {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                                                             </div>

@@ -22,7 +22,7 @@ export default function ResultsPage() {
         const soloResults = sessionStorage.getItem("solo_results")
         const saved = duoResults || soloResults
         const mode = duoResults ? "dual" : "solo"
-
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (duoResults) setIsDuo(true)
 
         if (saved) {
@@ -52,11 +52,11 @@ export default function ResultsPage() {
     }
 
     return (
-        <div className="min-h-screen p-4 bg-black text-white dot-pattern overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+        <div className="min-h-screen p-4 bg-black text-white dot-pattern relative">
+            <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
-            <div className="relative z-10 max-w-3xl mx-auto flex flex-col h-full min-h-screen">
-                <header className="text-center space-y-4 pt-12 pb-8">
+            <div className="relative z-10 max-w-3xl mx-auto flex flex-col">
+                <header className="text-center space-y-4 pt-4 pb-8">
                     <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-400 uppercase tracking-widest backdrop-blur-sm">
                         <span className="flex h-2 w-2 rounded-full bg-red-600 mr-2 animate-pulse"></span>
                         Mission Accomplished
@@ -67,7 +67,7 @@ export default function ResultsPage() {
                     </p>
                 </header>
 
-                <div className="flex-1 pb-28 overflow-y-auto scrollbar-hide">
+                <div className="pb-28">
                     {likes.length === 0 ? (
                         <div className="text-center p-12 border border-dashed border-zinc-800 rounded-2xl bg-zinc-900/20 space-y-6">
                             <p className="text-zinc-500 font-medium">No movies liked. Tough crowd!</p>

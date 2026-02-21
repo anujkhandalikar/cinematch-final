@@ -21,7 +21,6 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
     const [synopsisOpen, setSynopsisOpen] = useState(false)
     const x = useMotionValue(0)
     const rotate = useTransform(x, [-200, 200], [-25, 25])
-    const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0.5, 1, 1, 1, 0.5])
 
     // Color overlays for swipe feedback
     const rightOpacity = useTransform(x, [0, 150], [0, 0.5])
@@ -58,8 +57,7 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
             <motion.div
                 style={{
                     width: "100%",
-                    maxWidth: "350px",
-                    height: "500px",
+                    height: "100%",
                     position: "absolute",
                     top: 0,
                     x: isFront ? x : 0,

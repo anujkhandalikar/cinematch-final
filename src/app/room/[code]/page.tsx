@@ -59,6 +59,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const channelRef = useRef<RealtimeChannel | null>(null)
     const [myLikedCount, setMyLikedCount] = useState(0)
     const [swipedCount, setSwipedCount] = useState(0)
+    const [isHost, setIsHost] = useState(false)
     const NUDGE_THRESHOLD = 3
 
     const normalizeParticipant = (row: Record<string, unknown>): Participant => ({
@@ -192,7 +193,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         }
 
         router.push("/results")
-    }, [supabase, code, router])
+    }, [supabase, code, router, myLikedCount, timeLeft])
 
     useEffect(() => {
         const init = async () => {
@@ -219,6 +220,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             setStatus(room.status)
             roomSeed.current = room.seed ?? null
             createdBy.current = room.created_by ?? null
+            setIsHost(room.created_by === user.id)
 
             const mood = sessionStorage.getItem("selected_mood") as Mood | null
 
@@ -399,6 +401,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     useEffect(() => {
         if (!allReady || status !== "waiting") {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCountdown(null)
             return
         }
@@ -459,6 +462,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     useEffect(() => {
         if (timeLeft === 0 && (status === "active" || status === "paused")) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowNudge(false)
             finishAndNavigate()
         }
@@ -474,6 +478,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     useEffect(() => {
         if (createdBy.current === userIdRef.current) return // host uses NudgeOverlay, not PauseOverlay
         if (status === "paused") {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowPauseOverlay(true)
             fetchMutualMatches()
         } else if (status === "active") {
@@ -577,8 +582,6 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         toast("Stack finished! Waiting for partner...")
     }
 
-    const isHost = createdBy.current === userId
-
     // --- Render ---
 
     if (isLoading) {
@@ -598,8 +601,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     if (status === "waiting") {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black text-white dot-pattern relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+            <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-black text-white dot-pattern relative">
+                <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -774,10 +777,10 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     if (status === "active" || status === "paused") {
         return (
-            <div className="flex flex-col items-center justify-between h-[calc(100dvh-5rem)] p-4 bg-black text-white dot-pattern overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none" />
+            <div className="flex flex-col items-center justify-between min-h-screen p-4 bg-black text-white dot-pattern relative">
+                <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
-                <header className="w-full grid grid-cols-3 items-center mb-4 z-50 max-w-md mx-auto pt-4 relative">
+                <header className="w-full grid grid-cols-3 items-center shrink-0 mb-4 z-50 max-w-md mx-auto pt-4 relative">
                     <div />
                     <div />
                     <div className="flex justify-end">
@@ -792,7 +795,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     </div>
                 </header>
 
-                <div className="flex-1 w-full flex flex-col items-center justify-center relative z-10">
+                <div className="flex-1 min-h-0 w-full flex flex-col items-center justify-center relative z-10">
                     <SwipeDeck
                         movies={movies}
                         onSwipe={handleSwipe}
@@ -802,7 +805,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     />
                 </div>
 
-                <div className="w-full mt-8 mb-6 space-y-4 max-w-md mx-auto relative z-10">
+                <div className="w-full shrink-0 mt-4 mb-2 space-y-4 max-w-md mx-auto relative z-10">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-zinc-500">
                         <span>{myLikedCount} liked</span>
                         <span>{Math.max(0, movies.length - swipedCount)} of {movies.length} remaining</span>
