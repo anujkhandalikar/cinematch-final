@@ -16,6 +16,7 @@ export default function ResultsPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null)
     const [isDuo, setIsDuo] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [hasWiggled, setHasWiggled] = useState(false)
     const carouselRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -79,13 +80,9 @@ export default function ResultsPage() {
             <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             <div className="relative z-10 max-w-3xl mx-auto flex flex-col">
-                <header className="text-center space-y-4 pt-4 pb-8">
-                    <span className="inline-flex items-center rounded-full border border-zinc-800 bg-zinc-900/80 px-4 py-1.5 text-xs font-medium text-zinc-400 uppercase tracking-widest backdrop-blur-sm">
-                        <span className="flex h-2 w-2 rounded-full bg-red-600 mr-2 animate-pulse"></span>
-                        Mission Accomplished
-                    </span>
-                    <h1 className="text-5xl font-black uppercase tracking-tighter leading-none">{isDuo ? "Mutual" : "Your"} <span className="text-red-600">Shortlist</span></h1>
-                    <p className="text-zinc-500 font-medium text-lg">
+                <header className="text-center space-y-2 pt-2 pb-4">
+                    <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">{isDuo ? "Mutual" : "Your"} <span className="text-red-600">Shortlist</span></h1>
+                    <p className="text-zinc-500 font-medium text-base">
                         {isDuo ? "You both liked" : "You liked"} <span className="text-white font-bold">{likes.length}</span> {likes.length === 1 ? "movie" : "movies"}.
                     </p>
                 </header>
@@ -120,13 +117,19 @@ export default function ResultsPage() {
                                                 e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                                             }
                                         }}
-                                        className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[76vw] md:w-auto snap-center"
+                                        className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[65vw] md:w-auto snap-center"
+                                        initial={!hasWiggled ? { x: 50, opacity: 0 } : false}
                                         animate={{
+                                            x: 0,
                                             scale: isSelected ? 1.0 : 0.85,
-                                            opacity: isSelected ? 1 : 0.3,
+                                            opacity: isSelected ? 1 : 0.4,
                                         }}
+                                        onAnimationComplete={() => setHasWiggled(true)}
                                         whileHover={!isSelected ? { opacity: 0.7 } : {}}
-                                        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                        transition={{
+                                            x: { type: "spring", stiffness: 300, damping: 25, delay: 0.1 },
+                                            default: { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+                                        }}
                                         style={{
                                             filter: isSelected ? "blur(0px)" : "blur(8px)",
                                         }}
@@ -195,19 +198,36 @@ export default function ResultsPage() {
                             })}
                         </div>
                     )}
+
+                    {/* Pagination Dots (Mobile Only) */}
+                    {likes.length > 0 && (
+                        <div className="flex justify-center items-center gap-2 mt-6 md:hidden">
+                            {likes.map((movie) => (
+                                <motion.div
+                                    key={`dot-${movie.id}`}
+                                    className={`h-1.5 rounded-full ${movie.id === selectedId ? 'bg-red-600' : 'bg-zinc-700'}`}
+                                    animate={{
+                                        width: movie.id === selectedId ? 24 : 6,
+                                        opacity: movie.id === selectedId ? 1 : 0.5
+                                    }}
+                                    transition={{ duration: 0.3 }}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                <div className="fixed bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black to-transparent z-20">
-                    <div className="max-w-3xl mx-auto flex gap-4">
+                <div className="fixed bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black via-black to-transparent z-20">
+                    <div className="max-w-3xl mx-auto flex gap-3">
                         <Button
-                            className="flex-1 h-14 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
+                            className="flex-1 h-12 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
                             variant="outline"
                             onClick={() => { trackResultsHome(likes.length); router.push("/"); }}
                         >
-                            <Home className="w-5 h-5 mr-2" /> Home
+                            <Home className="w-4 h-4 mr-2" /> Home
                         </Button>
                         <Button
-                            className="flex-1 h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={!selectedId}
                             onClick={() => {
                                 const selectedMovie = likes.find(m => m.id === selectedId);
