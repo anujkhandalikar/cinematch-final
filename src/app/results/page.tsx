@@ -8,6 +8,7 @@ import { motion } from "framer-motion"
 
 import Image from "next/image"
 import { trackResultsViewed, trackResultMovieClick, trackResultsStartOver } from "@/lib/analytics"
+import { Play } from "lucide-react"
 
 export default function ResultsPage() {
     const router = useRouter()
@@ -214,9 +215,9 @@ export default function ResultsPage() {
                     )}
                 </div>
 
-                <div className="flex-shrink-0 pb-6 pt-3">
+                <div className="flex-shrink-0 pb-6 pt-3 space-y-3">
                     <Button
-                        className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                         disabled={!selectedId}
                         onClick={() => {
                             const selectedMovie = likes.find(m => m.id === selectedId);
@@ -226,8 +227,21 @@ export default function ResultsPage() {
                             }
                         }}
                     >
+                        <Play className="w-4 h-4 fill-white text-white flex-shrink-0" />
                         Watch Now
                     </Button>
+                    <p className="text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600">
+                        Built with <span className="text-red-600">♥</span> by{" "}
+                        <a
+                            href="https://anujk.in"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-zinc-400 hover:text-white transition-colors"
+                        >
+                            Anuj
+                        </a>
+                        .
+                    </p>
                 </div>
             </div>
         </div>
