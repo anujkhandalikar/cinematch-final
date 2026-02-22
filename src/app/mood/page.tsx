@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv } from "lucide-react"
+import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getAvailableProviders, type Mood } from "@/lib/movies"
 import { trackMoodSelected, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack } from "@/lib/analytics"
@@ -43,6 +43,41 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
         description: "King Khan's finest films",
         icon: <Star className="w-7 h-7" />,
         gradient: "from-orange-500/20 to-red-600/5"
+    },
+    {
+        id: "latest",
+        label: "The \"February 2026\" Vibe",
+        description: "Release Date < 12 months. Focuses on the \"New Drop\" high.",
+        icon: <Flame className="w-7 h-7" />,
+        gradient: "from-rose-500/20 to-red-600/5"
+    },
+    {
+        id: "gritty_thrillers",
+        label: "Gritty Thrillers",
+        description: "Cross-platform dark hits. Pure adrenaline, no fluff.",
+        icon: <Zap className="w-7 h-7" />,
+        gradient: "from-indigo-500/20 to-zinc-600/5"
+    },
+    {
+        id: "quick_watches",
+        label: "Quick Watches",
+        description: "Total Runtime < 100 mins. Perfect for a one-sitting commute.",
+        icon: <Timer className="w-7 h-7" />,
+        gradient: "from-blue-500/20 to-cyan-600/5"
+    },
+    {
+        id: "reality_and_drama",
+        label: "Reality & Drama",
+        description: "Format: Unscripted. High-engagement, low-commitment noise.",
+        icon: <Users className="w-7 h-7" />,
+        gradient: "from-fuchsia-500/20 to-pink-600/5"
+    },
+    {
+        id: "whats_viral",
+        label: "What's Viral",
+        description: "Social Velocity Filter. The \"Watercooler\" pill.",
+        icon: <TrendingUp className="w-7 h-7" />,
+        gradient: "from-green-500/20 to-emerald-600/5"
     }
 ]
 
@@ -158,14 +193,14 @@ export default function MoodPage() {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r ${gradient} border transition-all duration-200 flex-shrink-0 whitespace-nowrap ${isSelected
-                                        ? "border-red-500/60 ring-1 ring-red-500/30"
-                                        : "border-zinc-800 hover:border-zinc-600"
+                                    ? "border-red-500/60 ring-1 ring-red-500/30"
+                                    : "border-zinc-800 hover:border-zinc-600"
                                     }`}
                                 onClick={() => toggleProvider(provider)}
                             >
                                 <div className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${isSelected
-                                        ? "bg-red-600 border-red-600"
-                                        : "border-zinc-600 group-hover:border-zinc-400"
+                                    ? "bg-red-600 border-red-600"
+                                    : "border-zinc-600 group-hover:border-zinc-400"
                                     }`}>
                                     {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                                 </div>
