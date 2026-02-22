@@ -46,36 +46,36 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
     },
     {
         id: "latest",
-        label: "The \"February 2026\" Vibe",
-        description: "Release Date < 12 months. Focuses on the \"New Drop\" high.",
+        label: "Latest",
+        description: "Fresh drops and new releases",
         icon: <Flame className="w-7 h-7" />,
         gradient: "from-rose-500/20 to-red-600/5"
     },
     {
         id: "gritty_thrillers",
         label: "Gritty Thrillers",
-        description: "Cross-platform dark hits. Pure adrenaline, no fluff.",
+        description: "Dark, edge-of-your-seat suspense",
         icon: <Zap className="w-7 h-7" />,
         gradient: "from-indigo-500/20 to-zinc-600/5"
     },
     {
         id: "quick_watches",
         label: "Quick Watches",
-        description: "Total Runtime < 100 mins. Perfect for a one-sitting commute.",
+        description: "Movies under 100 minutes",
         icon: <Timer className="w-7 h-7" />,
         gradient: "from-blue-500/20 to-cyan-600/5"
     },
     {
         id: "reality_and_drama",
         label: "Reality & Drama",
-        description: "Format: Unscripted. High-engagement, low-commitment noise.",
+        description: "Bingeable unscripted chaos",
         icon: <Users className="w-7 h-7" />,
         gradient: "from-fuchsia-500/20 to-pink-600/5"
     },
     {
         id: "whats_viral",
         label: "What's Viral",
-        description: "Social Velocity Filter. The \"Watercooler\" pill.",
+        description: "The shows everyone is talking about",
         icon: <TrendingUp className="w-7 h-7" />,
         gradient: "from-green-500/20 to-emerald-600/5"
     }
@@ -305,11 +305,11 @@ export default function MoodPage() {
                                             {mood.icon}
                                         </div>
                                         <div className="relative">
-                                            <h3 className={`font-black text-lg md:text-sm uppercase tracking-wide mb-1 md:mb-0 transition-colors ${isSelected ? "text-red-500" : "text-white group-hover:text-red-500"
+                                            <h3 className={`font-black text-lg md:text-sm uppercase tracking-wide mb-1 transition-colors ${isSelected ? "text-red-500" : "text-white group-hover:text-red-500"
                                                 }`}>
                                                 {mood.label}
                                             </h3>
-                                            <p className="text-zinc-500 text-sm font-medium md:hidden">
+                                            <p className="text-zinc-500 text-sm md:text-xs font-medium mt-1 md:mt-2">
                                                 {mood.description}
                                             </p>
                                         </div>
