@@ -46,8 +46,20 @@ export default function ResultsPage() {
     }, [likes]);
 
     useEffect(() => {
+        const tmdbResults = sessionStorage.getItem("tmdb_solo_results")
         const duoResults = sessionStorage.getItem("duo_results")
         const soloResults = sessionStorage.getItem("solo_results")
+
+        if (tmdbResults) {
+            // TMDB path — full movie objects stored directly, no DB fetch needed
+            const likedMovies = JSON.parse(tmdbResults) as Movie[]
+            setLikes(likedMovies)
+            trackResultsViewed("solo", likedMovies.length)
+            if (likedMovies.length > 0) setSelectedId(likedMovies[0].id)
+            setIsLoading(false)
+            return
+        }
+
         const saved = duoResults || soloResults
         const mode = duoResults ? "dual" : "solo"
         // eslint-disable-next-line react-hooks/set-state-in-effect

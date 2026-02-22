@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv } from "lucide-react"
+import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp, Shuffle, ArrowRight, Sparkles } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getAvailableProviders, type Mood } from "@/lib/movies"
 import { trackMoodSelected, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack } from "@/lib/analytics"
+
+const NOISE_TEXTURE = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")"
 
 const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNode; gradient: string }[] = [
     {
@@ -14,35 +16,70 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
         label: "IMDb Rated Top",
         description: "The greatest films ever made",
         icon: <Trophy className="w-7 h-7" />,
-        gradient: "from-amber-500/20 to-yellow-600/5"
+        gradient: "from-amber-500/60 via-amber-900/30 to-transparent",
     },
     {
         id: "light_and_fun",
         label: "Something Light & Fun",
         description: "Feel-good, easy watches",
         icon: <PartyPopper className="w-7 h-7" />,
-        gradient: "from-pink-500/20 to-purple-600/5"
+        gradient: "from-pink-500/60 via-pink-900/30 to-transparent",
     },
     {
         id: "bollywood",
         label: "Bollywood",
         description: "The best of Indian cinema",
         icon: <Clapperboard className="w-7 h-7" />,
-        gradient: "from-emerald-500/20 to-teal-600/5"
+        gradient: "from-orange-500/65 via-rose-900/35 to-transparent",
     },
     {
         id: "oscar",
         label: "Oscar Winners",
         description: "Academy Award Best Picture winners",
         icon: <Award className="w-7 h-7" />,
-        gradient: "from-yellow-500/20 to-amber-600/5"
+        gradient: "from-yellow-400/55 via-yellow-900/30 to-transparent",
     },
     {
         id: "srk",
         label: "Shah Rukh Khan",
         description: "King Khan's finest films",
         icon: <Star className="w-7 h-7" />,
-        gradient: "from-orange-500/20 to-red-600/5"
+        gradient: "from-red-500/60 via-red-900/30 to-transparent",
+    },
+    {
+        id: "latest",
+        label: "Latest",
+        description: "Fresh drops and new releases",
+        icon: <Flame className="w-7 h-7" />,
+        gradient: "from-rose-600/60 via-rose-950/30 to-transparent",
+    },
+    {
+        id: "gritty_thrillers",
+        label: "Gritty Thrillers",
+        description: "Dark, edge-of-your-seat suspense",
+        icon: <Zap className="w-7 h-7" />,
+        gradient: "from-indigo-500/55 via-indigo-950/30 to-transparent",
+    },
+    {
+        id: "quick_watches",
+        label: "Quick Watches",
+        description: "Movies under 100 minutes",
+        icon: <Timer className="w-7 h-7" />,
+        gradient: "from-sky-500/55 via-sky-900/25 to-transparent",
+    },
+    {
+        id: "reality_and_drama",
+        label: "Reality & Drama",
+        description: "Bingeable unscripted chaos",
+        icon: <Users className="w-7 h-7" />,
+        gradient: "from-fuchsia-500/60 via-fuchsia-900/30 to-transparent",
+    },
+    {
+        id: "whats_viral",
+        label: "What's Viral",
+        description: "The shows everyone is talking about",
+        icon: <TrendingUp className="w-7 h-7" />,
+        gradient: "from-emerald-500/60 via-emerald-900/30 to-transparent",
     }
 ]
 
@@ -61,20 +98,47 @@ export default function MoodPage() {
     const [availableProviders, setAvailableProviders] = useState<string[]>([])
     const [selectedProviders, setSelectedProviders] = useState<string[]>([])
     const [loadingProviders, setLoadingProviders] = useState(false)
+    const [displayedMoods, setDisplayedMoods] = useState<typeof MOODS>([])
+    const [cardsVisible, setCardsVisible] = useState(true)
+    const [aiInput, setAiInput] = useState("")
+    const [aiQuery, setAiQuery] = useState("")
 
-    // Fetch OTT providers when a mood is selected
+    // Initialize with the requested default moods
     useEffect(() => {
-        if (!selectedMood) return
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+        const defaultMoodIds = ["light_and_fun", "latest", "imdb_top"]
+        const initialMoods = MOODS.filter(m => defaultMoodIds.includes(m.id))
+        setDisplayedMoods(initialMoods)
+    }, [])
+
+    // Shuffle exactly 3 cards
+    const handleShuffle = () => {
+        setCardsVisible(false)
+        setTimeout(() => {
+            const currentIds = displayedMoods.map(m => m.id)
+            const availableMoods = MOODS.filter(m => !currentIds.includes(m.id))
+            const shuffled = [...availableMoods].sort(() => 0.5 - Math.random())
+            setDisplayedMoods(shuffled.slice(0, 3))
+            setCardsVisible(true)
+        }, 200)
+    }
+
+    // Fetch OTT providers when a mood or AI query is active
+    useEffect(() => {
+        if (!selectedMood && !aiQuery) return
         setLoadingProviders(true)
         setSelectedProviders([])
-        getAvailableProviders(selectedMood).then((providers) => {
+        // For AI mode pass no mood to get all providers; for mood mode pass the mood
+        getAvailableProviders(selectedMood ?? undefined).then((providers) => {
             setAvailableProviders(providers)
             setLoadingProviders(false)
         })
-    }, [selectedMood])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedMood, aiQuery])
 
     const handleMoodSelect = (mood: Mood) => {
+        // Clear AI query when a mood pill is picked
+        setAiInput("")
+        setAiQuery("")
         if (selectedMood === mood) {
             setSelectedMood(null)
             setAvailableProviders([])
@@ -84,6 +148,15 @@ export default function MoodPage() {
         setSelectedMood(mood)
         trackMoodSelected(mood)
         sessionStorage.setItem("selected_mood", mood)
+    }
+
+    const handleAiSubmit = () => {
+        const trimmed = aiInput.trim()
+        if (!trimmed) return
+        console.log("[ai-search] submit query:", trimmed)
+        // Clear mood selection when AI query is submitted
+        setSelectedMood(null)
+        setAiQuery(trimmed)
     }
 
     const toggleProvider = (provider: string) => {
@@ -105,6 +178,13 @@ export default function MoodPage() {
             sessionStorage.removeItem("selected_ott")
         }
 
+        if (aiQuery) {
+            sessionStorage.setItem("ai_search_query", aiQuery)
+            sessionStorage.removeItem("selected_mood")
+            router.push("/solo")
+            return
+        }
+
         const mode = sessionStorage.getItem("selected_mode")
         if (mode === "dual") {
             router.push("/lobby/dual")
@@ -116,6 +196,14 @@ export default function MoodPage() {
     const handleSkip = () => {
         trackOttSkipped()
         sessionStorage.removeItem("selected_ott")
+
+        if (aiQuery) {
+            sessionStorage.setItem("ai_search_query", aiQuery)
+            sessionStorage.removeItem("selected_mood")
+            router.push("/solo")
+            return
+        }
+
         const mode = sessionStorage.getItem("selected_mode")
         if (mode === "dual") {
             router.push("/lobby/dual")
@@ -158,14 +246,14 @@ export default function MoodPage() {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 className={`group relative flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r ${gradient} border transition-all duration-200 flex-shrink-0 whitespace-nowrap ${isSelected
-                                        ? "border-red-500/60 ring-1 ring-red-500/30"
-                                        : "border-zinc-800 hover:border-zinc-600"
+                                    ? "border-red-500/60 ring-1 ring-red-500/30"
+                                    : "border-zinc-800 hover:border-zinc-600"
                                     }`}
                                 onClick={() => toggleProvider(provider)}
                             >
                                 <div className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${isSelected
-                                        ? "bg-red-600 border-red-600"
-                                        : "border-zinc-600 group-hover:border-zinc-400"
+                                    ? "bg-red-600 border-red-600"
+                                    : "border-zinc-600 group-hover:border-zinc-400"
                                     }`}>
                                     {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
                                 </div>
@@ -234,76 +322,150 @@ export default function MoodPage() {
                             </div>
                         </div>
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="grid gap-4 pt-4 md:grid-cols-5"
-                        >
-                            {MOODS.map((mood, i) => {
-                                const isSelected = selectedMood === mood.id
-                                return (
-                                    <motion.button
-                                        key={mood.id}
-                                        initial={{ opacity: 0, y: 15 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.15 + i * 0.08 }}
-                                        className={`group relative flex items-center md:flex-col md:justify-center md:py-12 md:px-4 md:aspect-[3/4] p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b ${mood.gradient} border transition-all duration-300 text-left md:text-center w-full overflow-hidden ${isSelected
-                                            ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
-                                            : selectedMood && !isSelected
-                                                ? "border-zinc-800/40 opacity-50"
-                                                : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.02]"
-                                            }`}
-                                        onClick={() => handleMoodSelect(mood.id)}
+                        {/* AI Natural Language Search */}
+                        <div className="relative">
+                            <div className={`flex items-center gap-2 rounded-xl border bg-zinc-950/60 px-4 py-3 transition-all duration-200 ${aiQuery ? "border-red-500/50 ring-1 ring-red-500/20" : "border-zinc-800 focus-within:border-zinc-600"}`}>
+                                <Sparkles className={`w-4 h-4 shrink-0 transition-colors ${aiQuery ? "text-red-400" : "text-zinc-500"}`} />
+                                <input
+                                    type="text"
+                                    value={aiInput}
+                                    onChange={(e) => {
+                                        setAiInput(e.target.value)
+                                        if (aiQuery) setAiQuery("")
+                                    }}
+                                    onKeyDown={(e) => e.key === "Enter" && handleAiSubmit()}
+                                    placeholder='Try: "top thriller from the 90s" or "feel-good Bollywood"'
+                                    className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none min-w-0"
+                                />
+                                {aiInput.trim() && (
+                                    <button
+                                        onClick={handleAiSubmit}
+                                        className="shrink-0 w-7 h-7 rounded-lg bg-red-600 hover:bg-red-500 flex items-center justify-center transition-colors"
                                     >
-                                        {/* Subtle glow on hover */}
-                                        <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                                        {/* Selection checkmark */}
-                                        {isSelected && (
-                                            <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-600 flex items-center justify-center">
-                                                <Check className="w-3.5 h-3.5 text-white" />
-                                            </div>
-                                        )}
-
-                                        <div className="relative mr-5 md:mr-0 md:mb-3 p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 transition-colors text-zinc-400 group-hover:text-white">
-                                            {mood.icon}
-                                        </div>
-                                        <div className="relative">
-                                            <h3 className={`font-black text-lg md:text-sm uppercase tracking-wide mb-1 md:mb-0 transition-colors ${isSelected ? "text-red-500" : "text-white group-hover:text-red-500"
-                                                }`}>
-                                                {mood.label}
-                                            </h3>
-                                            <p className="text-zinc-500 text-sm font-medium md:hidden">
-                                                {mood.description}
-                                            </p>
-                                        </div>
-                                    </motion.button>
-                                )
-                            })}
-                        </motion.div>
-
-                        {/* Desktop OTT Filter Section */}
-                        <div className="hidden md:block">
-                            <AnimatePresence>
-                                {selectedMood && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: "auto" }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                                        className="overflow-hidden"
-                                    >
-                                        {renderOttFilterContent(false)}
-                                    </motion.div>
+                                        <ArrowRight className="w-3.5 h-3.5 text-white" />
+                                    </button>
                                 )}
-                            </AnimatePresence>
+                            </div>
+                            {aiQuery && (
+                                <p className="mt-1.5 text-[11px] font-bold uppercase tracking-widest text-red-500/70 px-1">
+                                    AI search active — OTT filters are only applied in mood mode
+                                </p>
+                            )}
                         </div>
+
+                        <AnimatePresence mode="wait">
+                            {aiQuery ? (
+                                /* AI mode: replace mood cards with inline OTT filter */
+                                <motion.div
+                                    key="ai-ott"
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                                >
+                                    {renderOttFilterContent(false)}
+                                </motion.div>
+                            ) : (
+                                /* Default: mood cards + OTT below (desktop only) */
+                                <motion.div
+                                    key="mood-cards"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex-1 h-px bg-zinc-800/60" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">or pick a vibe</span>
+                                        <div className="flex-1 h-px bg-zinc-800/60" />
+                                    </div>
+
+                                    <motion.div
+                                        animate={{ opacity: cardsVisible ? 1 : 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="grid gap-4 md:grid-cols-3"
+                                    >
+                                        {displayedMoods.map((mood) => {
+                                            const isSelected = selectedMood === mood.id
+                                            return (
+                                                <button
+                                                    key={mood.id}
+                                                    className={`group relative flex items-center md:flex-col md:justify-center md:py-12 md:px-4 md:aspect-[3/4] p-6 rounded-xl bg-gradient-to-r md:bg-gradient-to-b md:bg-black border transition-all duration-300 text-left md:text-center w-full overflow-hidden transform-gpu will-change-transform ${isSelected
+                                                        ? "border-red-500/60 ring-1 ring-red-500/30 scale-[1.02]"
+                                                        : selectedMood && !isSelected
+                                                            ? "border-zinc-800/40 opacity-50"
+                                                            : "border-zinc-800 hover:border-zinc-600 hover:scale-[1.02]"
+                                                        }`}
+                                                    onClick={() => handleMoodSelect(mood.id)}
+                                                >
+                                                    <div className={`absolute inset-0 bg-gradient-to-t md:bg-gradient-to-t ${mood.gradient}`} />
+                                                    <div
+                                                        className="absolute inset-0 opacity-[0.12] mix-blend-soft-light"
+                                                        style={{ backgroundImage: NOISE_TEXTURE, backgroundSize: "200px 200px" }}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-zinc-950/20 to-zinc-950/60" />
+                                                    <div className="absolute inset-0 bg-white/[0.04] opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10" />
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-600 flex items-center justify-center">
+                                                            <Check className="w-3.5 h-3.5 text-white" />
+                                                        </div>
+                                                    )}
+                                                    <div className="relative mr-5 md:mr-0 md:mb-3 p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 group-hover:border-zinc-700 transition-colors text-zinc-400 group-hover:text-white">
+                                                        {mood.icon}
+                                                    </div>
+                                                    <div className="relative">
+                                                        <h3 className={`font-black text-lg md:text-md uppercase tracking-wide mb-1 transition-colors ${isSelected ? "text-red-500" : "text-white group-hover:text-red-500"}`}>
+                                                            {mood.label}
+                                                        </h3>
+                                                        <p className="text-zinc-500 text-sm font-medium mt-1 md:mt-2">
+                                                            {mood.description}
+                                                        </p>
+                                                    </div>
+                                                </button>
+                                            )
+                                        })}
+                                    </motion.div>
+
+                                    {/* Shuffle Controls */}
+                                    {!selectedMood && (
+                                        <div className="flex justify-center pt-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleShuffle}
+                                                className="rounded-full bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 hover:border-zinc-700"
+                                            >
+                                                <Shuffle className="w-4 h-4 mr-2" />
+                                                Shuffle Options
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {/* Desktop OTT Filter — only for mood pill path */}
+                                    <div className="hidden md:block">
+                                        <AnimatePresence>
+                                            {selectedMood && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: "auto" }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    {renderOttFilterContent(false)}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Mobile Sticky Bottom Bar */}
+            {/* Mobile Sticky Bottom Bar — only for mood pill path; AI mode shows OTT inline */}
             <div className="md:hidden">
                 <AnimatePresence>
                     {selectedMood && (
