@@ -115,6 +115,11 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
                             <span className="text-zinc-400 text-sm font-semibold tracking-wider">
                                 {movie.year}
                             </span>
+                            {movie.media_type === "tv" && (
+                                <span className="inline-flex items-center gap-1 bg-purple-600/80 text-white px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none uppercase ml-auto">
+                                    TV Series
+                                </span>
+                            )}
                         </div>
 
                         {/* Title */}

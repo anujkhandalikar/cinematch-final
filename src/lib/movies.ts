@@ -12,6 +12,7 @@ export interface Movie {
     imdb_rating: number
     mood: Mood
     ott_providers: string[]
+    media_type?: string
 }
 
 const supabase = createClient()

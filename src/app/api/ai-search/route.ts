@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import OpenAI from "openai"
 import type { Movie, Mood } from "@/lib/movies"
 
+export const maxDuration = 60;
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY ?? process.env.open_api_key })
 
 const TMDB_BASE = "https://api.themoviedb.org/3"
@@ -9,6 +11,7 @@ const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 const GENRE_NAME_TO_ID: Record<string, number> = {
     Action: 28,
+    "Action & Adventure": 10759,
     Adventure: 12,
     Animation: 16,
     Comedy: 35,
@@ -19,12 +22,19 @@ const GENRE_NAME_TO_ID: Record<string, number> = {
     Fantasy: 14,
     History: 36,
     Horror: 27,
+    Kids: 10762,
     Music: 10402,
     Mystery: 9648,
+    News: 10763,
+    Reality: 10764,
     Romance: 10749,
     "Science Fiction": 878,
+    "Sci-Fi & Fantasy": 10765,
+    Soap: 10766,
+    Talk: 10767,
     Thriller: 53,
     War: 10752,
+    "War & Politics": 10768,
     Western: 37,
 }
 
@@ -84,6 +94,7 @@ type ParsedQuery = {
         latest?: boolean
         award?: boolean
     }
+    mediaType: "movie" | "tv" | "any"
     titleCandidate?: string
     subjective?: boolean
 }
@@ -103,14 +114,17 @@ type LlmExtract = {
         latest?: boolean
         award?: boolean
     }
+    mediaType?: "movie" | "tv" | "any"
 }
 
-interface TmdbMovie {
+interface TmdbItem {
     id: number
-    title: string
+    title?: string
+    name?: string
     poster_path: string | null
     genre_ids: number[]
-    release_date: string
+    release_date?: string
+    first_air_date?: string
     overview: string
     vote_average: number
 }
@@ -611,6 +625,13 @@ function extractExcludedGenres(query: string): string[] {
 function parseQuery(query: string): ParsedQuery {
     const q = query.toLowerCase()
 
+    let mediaType: "movie" | "tv" | "any" = "any"
+    if (q.match(/\b(tv|show|shows|series)\b/)) {
+        mediaType = "tv"
+    } else if (q.match(/\b(movie|movies|film|films)\b/)) {
+        mediaType = "movie"
+    }
+
     const { year, range } = parseYearRange(q)
     const moodTags = detectMoodTags(q)
 
@@ -684,6 +705,7 @@ function parseQuery(query: string): ParsedQuery {
         intent: { top: wantsTop, latest: wantsLatest, award: wantsAward },
         titleCandidate,
         subjective,
+        mediaType,
     }
 }
 
@@ -755,7 +777,7 @@ async function extractWithLLM(query: string): Promise<LlmExtract> {
         messages: [
             {
                 role: "system",
-                content: `Extract structured movie search intent as JSON. Return ONLY valid JSON.\n\nSchema:\n{\n  \"title\": string | null,\n  \"keywords\": string[],\n  \"year\": number | null,\n  \"yearRange\": {\"start\": number, \"end\": number} | null,\n  \"language\": string | null,      // ISO 639-1 if possible, else language name\n  \"region\": string | null,        // ISO 3166-1 if possible\n  \"includeGenres\": string[],      // genre names like Comedy, Thriller\n  \"excludeGenres\": string[],\n  \"moodTags\": string[],           // mood/emotion tags like sad, dark, intense, feel_good, uplifting\n  \"intent\": {\"top\": boolean, \"latest\": boolean, \"award\": boolean}\n}\n\nRules:\n- If decade is mentioned (e.g., 90s), set yearRange.\n- If exact year, set year.\n- If title is explicit, set title.\n- Populate keywords with remaining meaningful tokens.\n- Map emotional adjectives to moodTags when possible.\n- Use empty arrays when none.\n- Do not include extra fields.`,
+                content: `Extract structured movie or TV show search intent as JSON. Return ONLY valid JSON.\n\nSchema:\n{\n  \"title\": string | null,\n  \"keywords\": string[],\n  \"year\": number | null,\n  \"yearRange\": {\"start\": number, \"end\": number} | null,\n  \"language\": string | null,      // ISO 639-1 if possible, else language name\n  \"region\": string | null,        // ISO 3166-1 if possible\n  \"includeGenres\": string[],      // genre names like Comedy, Thriller, "Action & Adventure", "Sci-Fi & Fantasy"\n  \"excludeGenres\": string[],\n  \"moodTags\": string[],           // mood/emotion tags like sad, dark, intense, feel_good, uplifting\n  \"intent\": {\"top\": boolean, \"latest\": boolean, \"award\": boolean},\n  \"mediaType\": \"movie\" | \"tv\" | \"any\"\n}\n\nRules:\n- If it specifies shows, series, or tv, set mediaType to "tv". If it specifies movies or films, set mediaType to "movie". Otherwise "any".\n- If decade is mentioned (e.g., 90s), set yearRange.\n- If exact year, set year.\n- If title is explicit, set title.\n- Populate keywords with remaining meaningful tokens.\n- Map emotional adjectives to moodTags when possible.\n- Use empty arrays when none.\n- Do not include extra fields.`,
             },
             { role: "user", content: query },
         ],
@@ -809,32 +831,45 @@ function normalizeMoodTags(input?: string[] | null): string[] | undefined {
     return tags.length > 0 ? tags : undefined
 }
 
-async function fetchTmdbPage(params: URLSearchParams, page: number): Promise<TmdbMovie[]> {
-    const p = new URLSearchParams(params)
+async function fetchTmdbPage(params: URLSearchParams, page: number, mediaType: "movie" | "tv" = "movie"): Promise<TmdbItem[]> {
+    const p = new URLSearchParams(params.toString())
+    if (mediaType === "tv") {
+        for (const [k, v] of Array.from(p.entries())) {
+            if (k.startsWith("primary_release_date")) {
+                p.delete(k)
+                p.set(k.replace("primary_release_date", "first_air_date"), v)
+            }
+        }
+        if (p.get("sort_by") === "primary_release_date.desc") {
+            p.set("sort_by", "first_air_date.desc")
+        }
+    }
     p.set("page", String(page))
-    const apiKey = process.env.TMDB_API_KEY
+    const apiKey = process.env.TMDB_API_KEY?.replace(/\\n/g, '')?.trim()
     if (!apiKey) {
         throw new Error("TMDB_API_KEY is missing in the server environment")
     }
     p.set("api_key", apiKey)
-    console.log("[ai-search] TMDB discover params:", p.toString())
-    const res = await fetchWithRetry(`${TMDB_BASE}/discover/movie?${p.toString()}`)
+    console.log(`[ai-search] TMDB discover/${mediaType} params:`, p.toString())
+    const res = await fetchWithRetry(`${TMDB_BASE}/discover/${mediaType}?${p.toString()}`)
     if (!res.ok) {
         console.error(`[ai-search] TMDB error ${res.status}: ${await res.text()}`)
         return []
     }
-    const data = (await res.json()) as { results: TmdbMovie[] }
-    return data.results ?? []
+    const data = (await res.json()) as { results: TmdbItem[] }
+    const results = data.results ?? []
+    results.forEach(r => { if (!(r as any).media_type) (r as any).media_type = mediaType })
+    return results
 }
 
-async function fetchDiscoverMovies(params: URLSearchParams, pages: number): Promise<TmdbMovie[]> {
-    const tasks: Promise<TmdbMovie[]>[] = []
+async function fetchDiscoverMovies(params: URLSearchParams, pages: number, mediaType: "movie" | "tv" = "movie"): Promise<TmdbItem[]> {
+    const tasks: Promise<TmdbItem[]>[] = []
     for (let page = 1; page <= pages; page++) {
-        tasks.push(fetchTmdbPage(params, page))
+        tasks.push(fetchTmdbPage(params, page, mediaType))
     }
     const results = await Promise.allSettled(tasks)
     const fulfilled = results
-        .filter((r): r is PromiseFulfilledResult<TmdbMovie[]> => r.status === "fulfilled")
+        .filter((r): r is PromiseFulfilledResult<TmdbItem[]> => r.status === "fulfilled")
         .map((r) => r.value)
     const rejected = results.filter((r) => r.status === "rejected")
     if (rejected.length > 0) {
@@ -843,22 +878,25 @@ async function fetchDiscoverMovies(params: URLSearchParams, pages: number): Prom
     return fulfilled.flat()
 }
 
-async function fetchTmdbSearchPage(params: URLSearchParams, page: number): Promise<TmdbMovie[]> {
+async function fetchTmdbSearchPage(params: URLSearchParams, page: number, mediaType: "movie" | "tv" | "multi" = "multi"): Promise<TmdbItem[]> {
     const p = new URLSearchParams(params)
     p.set("page", String(page))
-    const apiKey = process.env.TMDB_API_KEY
+    const apiKey = process.env.TMDB_API_KEY?.replace(/\\n/g, '')?.trim()
     if (!apiKey) {
         throw new Error("TMDB_API_KEY is missing in the server environment")
     }
     p.set("api_key", apiKey)
-    console.log("[ai-search] TMDB search params:", p.toString())
-    const res = await fetchWithRetry(`${TMDB_BASE}/search/movie?${p.toString()}`)
+    console.log(`[ai-search] TMDB search/${mediaType} params:`, p.toString())
+    const res = await fetchWithRetry(`${TMDB_BASE}/search/${mediaType}?${p.toString()}`)
     if (!res.ok) {
         console.error(`[ai-search] TMDB search error ${res.status}: ${await res.text()}`)
         return []
     }
-    const data = (await res.json()) as { results: TmdbMovie[] }
-    return data.results ?? []
+    const data = (await res.json()) as { results: (TmdbItem & { media_type?: string })[] }
+    // Filter out people if multi search
+    const results = data.results ?? []
+    results.forEach(r => { if (!r.media_type && mediaType !== "multi") r.media_type = mediaType })
+    return results.filter(r => r.media_type !== "person")
 }
 
 function sleep(ms: number): Promise<void> {
@@ -898,7 +936,16 @@ async function streamDiscoverPagesIncremental(
 ): Promise<number> {
     let total = 0
     for (let page = 1; page <= maxPages; page++) {
-        const pageResults = await fetchTmdbPage(params, page)
+        let pageResults: TmdbItem[] = []
+        if (parsed.mediaType === "any") {
+            const [m, tvs] = await Promise.all([
+                fetchTmdbPage(params, page, "movie"),
+                fetchTmdbPage(params, page, "tv")
+            ])
+            pageResults = [...m, ...tvs]
+        } else {
+            pageResults = await fetchTmdbPage(params, page, parsed.mediaType)
+        }
         if (pageResults.length === 0) break
         let mapped = pageResults
             .filter((t) => t.poster_path)
@@ -926,8 +973,9 @@ async function streamSearchPagesIncremental(
     encoder: TextEncoder
 ): Promise<number> {
     let total = 0
+    const mType = parsed.mediaType === "any" ? "multi" : parsed.mediaType
     for (let page = 1; page <= maxPages; page++) {
-        const pageResults = await fetchTmdbSearchPage(params, page)
+        const pageResults = await fetchTmdbSearchPage(params, page, mType)
         if (pageResults.length === 0) break
         let mapped = pageResults
             .filter((t) => t.poster_path)
@@ -949,7 +997,16 @@ async function streamSearchPagesIncremental(
 async function collectDiscoverPages(params: URLSearchParams, parsed: ParsedQuery, maxPages: number, maxResults: number): Promise<Movie[]> {
     const movies: Movie[] = []
     for (let page = 1; page <= maxPages; page++) {
-        const pageResults = await fetchTmdbPage(params, page)
+        let pageResults: TmdbItem[] = []
+        if (parsed.mediaType === "any") {
+            const [m, tvs] = await Promise.all([
+                fetchTmdbPage(params, page, "movie"),
+                fetchTmdbPage(params, page, "tv")
+            ])
+            pageResults = [...m, ...tvs]
+        } else {
+            pageResults = await fetchTmdbPage(params, page, parsed.mediaType)
+        }
         if (pageResults.length === 0) break
         const mapped = pageResults
             .filter((t) => t.poster_path)
@@ -961,17 +1018,18 @@ async function collectDiscoverPages(params: URLSearchParams, parsed: ParsedQuery
     return moodApplied.movies
 }
 
-function tmdbToMovie(t: TmdbMovie): Movie {
+function tmdbToMovie(t: TmdbItem): Movie {
     return {
         id: `tmdb_${t.id}`,
-        title: t.title,
+        title: t.title || t.name || "",
         poster_url: t.poster_path ? `${TMDB_IMAGE_BASE}${t.poster_path}` : "",
         genre: t.genre_ids.map((id) => GENRE_ID_TO_NAME[id]).filter(Boolean),
-        year: parseInt(t.release_date?.split("-")[0] ?? "0"),
-        overview: t.overview,
+        year: parseInt((t.release_date || t.first_air_date)?.split("-")[0] ?? "0"),
+        overview: t.overview || "",
         imdb_rating: Math.round(t.vote_average * 10) / 10,
         mood: "latest" as Mood,
         ott_providers: [],
+        media_type: (t as any).media_type === "tv" ? "tv" : "movie",
     }
 }
 
@@ -1107,7 +1165,16 @@ function discoverPageCount(parsed: ParsedQuery): number {
 async function runDiscover(parsed: ParsedQuery, options: { relaxVoteCount?: boolean; widenYear?: boolean; ignoreYear?: boolean; ignoreLatestWindow?: boolean } = {}): Promise<{ movies: Movie[]; params: string }> {
     const params = buildDiscoverParams(parsed, options)
     console.log(`[ai-search] → discover TMDB params: ${params.toString()}`)
-    const discoverRaw = await fetchDiscoverMovies(params, discoverPageCount(parsed))
+    let discoverRaw: TmdbItem[] = []
+    if (parsed.mediaType === "any") {
+        const [movies, tvs] = await Promise.all([
+            fetchDiscoverMovies(params, discoverPageCount(parsed), "movie"),
+            fetchDiscoverMovies(params, discoverPageCount(parsed), "tv")
+        ])
+        discoverRaw = [...movies, ...tvs]
+    } else {
+        discoverRaw = await fetchDiscoverMovies(params, discoverPageCount(parsed), parsed.mediaType)
+    }
     const movies: Movie[] = discoverRaw
         .filter((t) => t.poster_path)
         .map(tmdbToMovie)
@@ -1118,12 +1185,13 @@ async function runSearch(parsed: ParsedQuery): Promise<{ movies: Movie[]; params
     if (!parsed.titleCandidate) return { movies: [], params: "" }
     const params = new URLSearchParams({ query: parsed.titleCandidate })
     if (parsed.year) params.set("year", String(parsed.year))
+    const mType = parsed.mediaType === "any" ? "multi" : parsed.mediaType
     const results = await Promise.allSettled([
-        fetchTmdbSearchPage(params, 1),
-        fetchTmdbSearchPage(params, 2),
+        fetchTmdbSearchPage(params, 1, mType),
+        fetchTmdbSearchPage(params, 2, mType),
     ])
     const pages = results
-        .filter((r): r is PromiseFulfilledResult<TmdbMovie[]> => r.status === "fulfilled")
+        .filter((r): r is PromiseFulfilledResult<TmdbItem[]> => r.status === "fulfilled")
         .map((r) => r.value)
     const rejected = results.filter((r) => r.status === "rejected")
     if (rejected.length > 0) {

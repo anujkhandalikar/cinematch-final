@@ -50,6 +50,11 @@ export function SynopsisOverlay({ movie, isOpen, onClose }: SynopsisOverlayProps
                                 <span className="text-zinc-400 text-sm font-semibold tracking-wider">
                                     {movie.year}
                                 </span>
+                                {movie.media_type === "tv" && (
+                                    <span className="inline-flex items-center gap-1.5 bg-purple-600/80 text-white px-2.5 py-1 rounded-md text-[10px] font-black tracking-wide uppercase ml-auto">
+                                        TV Series
+                                    </span>
+                                )}
                             </div>
 
                             {/* Title */}

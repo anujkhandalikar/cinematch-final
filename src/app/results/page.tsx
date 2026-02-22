@@ -18,6 +18,11 @@ export default function ResultsPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [hasWiggled, setHasWiggled] = useState(false)
     const [synopsisOpenId, setSynopsisOpenId] = useState<string | null>(null)
+
+    // New Watch For state
+    const [watchForData, setWatchForData] = useState<Record<string, string>>({})
+    const [isWatchForLoading, setIsWatchForLoading] = useState(false)
+
     const carouselRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -82,6 +87,28 @@ export default function ResultsPage() {
             setIsLoading(false)
         }
     }, [])
+
+    // New useEffect to fetch Watch For Data
+    useEffect(() => {
+        if (likes.length === 0) return;
+
+        setIsWatchForLoading(true);
+        fetch('/api/watch-for', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                movies: likes.map(m => ({ id: m.id, title: m.title, overview: m.overview }))
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.watchFor) {
+                    setWatchForData(data.watchFor);
+                }
+            })
+            .catch(err => console.error("Failed to fetch watch for data:", err))
+            .finally(() => setIsWatchForLoading(false));
+    }, [likes]);
 
     if (isLoading) {
         return (
@@ -267,7 +294,39 @@ export default function ResultsPage() {
                     )}
                 </div>
 
-                <div className="flex-shrink-0 pb-6 pt-3 space-y-3">
+                <div className="flex-shrink-0 pb-7 pt-2 space-y-5 relative">
+                    {/* Watch For Pill */}
+                    <div className="flex justify-center mb-3">
+                        <div className="relative h-7 flex items-center justify-center">
+                            <AnimatePresence mode="wait">
+                                {selectedId && watchForData[selectedId] ? (
+                                    <motion.div
+                                        key={selectedId}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                                        className="bg-zinc-900 px-5 py-1.5 rounded-full border border-zinc-700 shadow-xl"
+                                    >
+                                        <span className="text-white text-[10px] font-bold uppercase tracking-wider">
+                                            Watch For: <span className="text-red-500">{watchForData[selectedId]}</span>
+                                        </span>
+                                    </motion.div>
+                                ) : isWatchForLoading && selectedId ? (
+                                    <motion.div
+                                        key="loading"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="bg-zinc-900 px-5 py-1.5 rounded-full border border-zinc-700"
+                                    >
+                                        <div className="w-24 h-4 rounded bg-zinc-600/50 animate-pulse" />
+                                    </motion.div>
+                                ) : null}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+
                     <Button
                         className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase tracking-tighter rounded-full shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
                         disabled={!selectedId}

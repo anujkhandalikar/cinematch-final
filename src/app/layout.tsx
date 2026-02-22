@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   description: "Find a movie to watch in 3 minutes.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
