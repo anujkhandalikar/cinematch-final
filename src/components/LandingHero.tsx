@@ -152,7 +152,7 @@ export default function LandingHero() {
                         <div className="flex flex-col items-center text-center space-y-5">
                             <div className="bg-zinc-900/50 rounded-2xl p-6 h-48 w-full flex items-center justify-center relative overflow-hidden group">
                                 <div className="grid grid-cols-2 gap-2 w-full max-w-[10rem] opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                                    {['Netflix', 'Max', 'Hulu', 'Peacock'].map((service) => (
+                                    {['Netflix', 'Jio', 'Mubi', 'Prime'].map((service) => (
                                         <div key={service} className="bg-zinc-800 rounded-lg p-2.5 text-center text-[10px] font-bold text-zinc-500 uppercase tracking-wider border border-zinc-700">
                                             {service}
                                         </div>
