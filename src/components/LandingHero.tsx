@@ -85,7 +85,7 @@ export default function LandingHero() {
                 >
                     <Link href="/lobby" onClick={() => trackLandingCTA("kill_the_scroll")}>
                         <Button size="lg" className="bg-red-600 hover:bg-red-700 text-white font-black text-base px-8 py-6 rounded-full uppercase tracking-tighter italic shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] transition-all hover:scale-105">
-                            Find a movie in 2 minutes →
+                            Find in 3 minutes →
                         </Button>
                     </Link>
                 </motion.div>
@@ -94,28 +94,31 @@ export default function LandingHero() {
             {/* How It Works Section */}
             <div className="relative z-10 container px-4 md:px-6 py-24 flex flex-col items-center space-y-12" id="how-it-works">
                 <div className="text-center space-y-6">
-                    <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">How It Works</h2>
+                    <div className="space-y-2">
+                        <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">How It Works</h2>
+                        <p className="text-zinc-500 font-medium text-sm">
+                            (Based on <a href="https://drive.google.com/file/d/1tDLNhn8A9PWnxelA1sJxlSGup9brrfTp/view" target="_blank" rel="noopener noreferrer" className="underline text-red-600 hover:text-red-500 transition-colors">research</a>)
+                        </p>
+                    </div>
 
                     {/* Mode toggle pill */}
                     <div className="flex items-center justify-center">
                         <div className="flex items-center bg-zinc-900 border border-zinc-800 rounded-full p-1">
                             <button
                                 onClick={() => setMode('solo')}
-                                className={`px-5 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
-                                    mode === 'solo'
-                                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
-                                        : 'text-zinc-500 hover:text-zinc-300'
-                                }`}
+                                className={`px-5 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-300 ${mode === 'solo'
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
+                                    : 'text-zinc-500 hover:text-zinc-300'
+                                    }`}
                             >
                                 Solo
                             </button>
                             <button
                                 onClick={() => setMode('duo')}
-                                className={`px-5 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-300 ${
-                                    mode === 'duo'
-                                        ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
-                                        : 'text-zinc-500 hover:text-zinc-300'
-                                }`}
+                                className={`px-5 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-300 ${mode === 'duo'
+                                    ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
+                                    : 'text-zinc-500 hover:text-zinc-300'
+                                    }`}
                             >
                                 Duo
                             </button>
