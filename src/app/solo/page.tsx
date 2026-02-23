@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
+import { SwipeGuide } from "@/components/SwipeGuide"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock } from "lucide-react"
 import { trackSessionStart, trackSessionComplete, trackSwipe, trackNudgeShown, trackNavBack, trackAiSearchSuccess, trackAiSearchError } from "@/lib/analytics"
@@ -18,6 +19,8 @@ const AI_LOADING_STEPS = ["Thinking...", "Scanning movies...", "Ranking picks...
 
 export default function SoloPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const guidePreview = searchParams.get("guide") === "preview"
     const [movies, setMovies] = useState<Movie[]>([])
     const [selectedOtt, setSelectedOtt] = useState<string[]>([])
     const [aiLoadingStep, setAiLoadingStep] = useState(0)
@@ -364,6 +367,9 @@ export default function SoloPage() {
                 onContinue={handleNudgeContinue}
                 onCheckShortlist={handleNudgeCheckShortlist}
             />
+
+            {/* Swipe guide — first-time only, or always when ?guide=preview */}
+            <SwipeGuide forceShow={guidePreview} />
         </div>
     )
 }
