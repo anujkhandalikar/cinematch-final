@@ -109,6 +109,11 @@ export default function MoodPage() {
     const [cardsVisible, setCardsVisible] = useState(true)
     const [aiInput, setAiInput] = useState("")
     const [aiQuery, setAiQuery] = useState("")
+    const [isDualMode, setIsDualMode] = useState(false)
+
+    useEffect(() => {
+        setIsDualMode(sessionStorage.getItem("selected_mode") === "dual")
+    }, [])
 
     // Initialize with the requested default moods
     useEffect(() => {
@@ -335,36 +340,38 @@ export default function MoodPage() {
                             </div>
                         </div>
 
-                        {/* AI Natural Language Search */}
-                        <div className="relative">
-                            <div className={`flex items-center gap-2 rounded-xl border bg-zinc-950/60 px-4 py-3 transition-all duration-200 ${aiQuery ? "border-red-500/50 ring-1 ring-red-500/20" : "border-zinc-800 focus-within:border-zinc-600"}`}>
-                                <Sparkles className={`w-4 h-4 shrink-0 transition-colors ${aiQuery ? "text-red-400" : "text-zinc-500"}`} />
-                                <input
-                                    type="text"
-                                    value={aiInput}
-                                    onChange={(e) => {
-                                        setAiInput(e.target.value)
-                                        if (aiQuery) setAiQuery("")
-                                    }}
-                                    onKeyDown={(e) => e.key === "Enter" && handleAiSubmit()}
-                                    placeholder='Try: "top thriller from the 90s" or "feel-good Bollywood"'
-                                    className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none min-w-0"
-                                />
-                                {aiInput.trim() && (
-                                    <button
-                                        onClick={handleAiSubmit}
-                                        className="shrink-0 w-7 h-7 rounded-lg bg-red-600 hover:bg-red-500 flex items-center justify-center transition-colors"
-                                    >
-                                        <ArrowRight className="w-3.5 h-3.5 text-white" />
-                                    </button>
+                        {/* AI Natural Language Search — hidden in dual mode */}
+                        {!isDualMode && (
+                            <div className="relative">
+                                <div className={`flex items-center gap-2 rounded-xl border bg-zinc-950/60 px-4 py-3 transition-all duration-200 ${aiQuery ? "border-red-500/50 ring-1 ring-red-500/20" : "border-zinc-800 focus-within:border-zinc-600"}`}>
+                                    <Sparkles className={`w-4 h-4 shrink-0 transition-colors ${aiQuery ? "text-red-400" : "text-zinc-500"}`} />
+                                    <input
+                                        type="text"
+                                        value={aiInput}
+                                        onChange={(e) => {
+                                            setAiInput(e.target.value)
+                                            if (aiQuery) setAiQuery("")
+                                        }}
+                                        onKeyDown={(e) => e.key === "Enter" && handleAiSubmit()}
+                                        placeholder='Try: "top thriller from the 90s" or "feel-good Bollywood"'
+                                        className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-600 outline-none min-w-0"
+                                    />
+                                    {aiInput.trim() && (
+                                        <button
+                                            onClick={handleAiSubmit}
+                                            className="shrink-0 w-7 h-7 rounded-lg bg-red-600 hover:bg-red-500 flex items-center justify-center transition-colors"
+                                        >
+                                            <ArrowRight className="w-3.5 h-3.5 text-white" />
+                                        </button>
+                                    )}
+                                </div>
+                                {aiQuery && (
+                                    <p className="mt-1.5 text-[11px] font-bold uppercase tracking-widest text-red-500/70 px-1">
+                                        AI search active — OTT filters are only applied in mood mode
+                                    </p>
                                 )}
                             </div>
-                            {aiQuery && (
-                                <p className="mt-1.5 text-[11px] font-bold uppercase tracking-widest text-red-500/70 px-1">
-                                    AI search active — OTT filters are only applied in mood mode
-                                </p>
-                            )}
-                        </div>
+                        )}
 
                         <AnimatePresence mode="wait">
                             {aiQuery ? (
