@@ -10,9 +10,10 @@ interface NudgeOverlayProps {
     likedCount: number
     onContinue: () => void
     onCheckShortlist: () => void
+    isHost?: boolean
 }
 
-export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist }: NudgeOverlayProps) {
+export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist, isHost = true }: NudgeOverlayProps) {
     return (
         <AnimatePresence>
             {show && (
@@ -29,7 +30,7 @@ export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist }:
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-black/85 backdrop-blur-md"
-                        onClick={onContinue}
+                        onClick={isHost ? onContinue : undefined}
                     />
 
                     {/* Modal Content */}
@@ -54,33 +55,44 @@ export function NudgeOverlay({ show, likedCount, onContinue, onCheckShortlist }:
                             {/* Text */}
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-black uppercase tracking-tight text-white">
-                                    We&apos;ve selected enough!
+                                    {isHost ? "We've selected enough!" : "Selected enough!"}
                                 </h2>
                                 <p className="text-zinc-400 text-sm font-medium">
-                                    You&apos;ve liked <span className="text-white font-bold">{likedCount}</span> movies so far.
+                                    You&apos;ve got <span className="text-white font-bold">{likedCount}</span> mutual matches!
                                     <br />
-                                    Ready to see your shortlist?
+                                    {isHost ? "Ready to see your shortlist?" : "Waiting for host to decide..."}
                                 </p>
                             </div>
 
                             {/* Actions */}
                             <div className="space-y-3 pt-2">
-                                <Button
-                                    onClick={() => { trackNudgeCheckShortlist(likedCount); onCheckShortlist(); }}
-                                    className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] hover:shadow-[0_0_35px_-5px_rgba(220,38,38,0.6)] transition-all hover:scale-[1.02]"
-                                >
-                                    <ListChecks className="w-5 h-5 mr-2" />
-                                    Check the Shortlist
-                                </Button>
+                                {isHost ? (
+                                    <>
+                                        <Button
+                                            onClick={() => { trackNudgeCheckShortlist(likedCount); onCheckShortlist(); }}
+                                            className="w-full h-14 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_25px_-5px_rgba(220,38,38,0.5)] hover:shadow-[0_0_35px_-5px_rgba(220,38,38,0.6)] transition-all hover:scale-[1.02]"
+                                        >
+                                            <ListChecks className="w-5 h-5 mr-2" />
+                                            Check the Shortlist
+                                        </Button>
 
-                                <Button
-                                    onClick={() => { trackNudgeContinue(likedCount); onContinue(); }}
-                                    variant="outline"
-                                    className="w-full h-14 bg-transparent border border-zinc-700 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
-                                >
-                                    Continue Swiping
-                                    <ArrowRight className="w-5 h-5 ml-2" />
-                                </Button>
+                                        <Button
+                                            onClick={() => { trackNudgeContinue(likedCount); onContinue(); }}
+                                            variant="outline"
+                                            className="w-full h-14 bg-transparent border border-zinc-700 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold uppercase tracking-wider rounded-full transition-all"
+                                        >
+                                            Continue Swiping
+                                            <ArrowRight className="w-5 h-5 ml-2" />
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <div className="flex items-center justify-center gap-3 p-4 bg-zinc-800/50 rounded-2xl border border-zinc-800">
+                                        <div className="flex h-3 w-3 rounded-full bg-red-600 animate-pulse" />
+                                        <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">
+                                            Host is deciding
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </motion.div>

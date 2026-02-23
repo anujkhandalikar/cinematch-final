@@ -30,7 +30,10 @@ export function SwipeDeck({ movies, onSwipe, onEmpty, disabled, selectedOtt, can
 
         const prevLen = prevMoviesLenRef.current
         if (prevLen === 0) {
-            // Initial load; keep existing activeMovies
+            // Initial population — activeMovies may have been initialized empty
+            // (async deck build), so always sync it here.
+            setActiveMovies(movies)
+            didEmptyRef.current = false
             prevMoviesLenRef.current = movies.length
             return
         }

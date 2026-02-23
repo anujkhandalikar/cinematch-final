@@ -114,7 +114,10 @@ export default function LandingHero() {
                                 Solo
                             </button>
                             <button
-                                onClick={() => setMode('duo')}
+                                onClick={() => {
+                                    setMode('duo');
+                                    document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }}
                                 className={`px-5 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider transition-all duration-300 ${mode === 'duo'
                                     ? 'bg-red-600 text-white shadow-lg shadow-red-900/40'
                                     : 'text-zinc-500 hover:text-zinc-300'

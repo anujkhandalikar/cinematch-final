@@ -5,10 +5,9 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { Button } from "@/components/ui/button"
-import { getMoviesByMoods, shuffleWithSeed, type Mood, type Movie } from "@/lib/movies"
+import { getMoviesByMood, getMoviesByMoods, shuffleWithSeed, interleaveArrays, type Mood, type Movie } from "@/lib/movies"
 import { toast } from "sonner"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
-import { PauseOverlay } from "@/components/PauseOverlay"
 import { Users, Play, Clock, Share2, Copy, Check, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
 import type { RealtimeChannel } from "@supabase/supabase-js"
@@ -52,7 +51,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const otherRightSwipesRef = useRef<Set<string>>(new Set())
     const [mutualMatches, setMutualMatches] = useState<string[]>([])
     const [showNudge, setShowNudge] = useState(false)
-    const [showPauseOverlay, setShowPauseOverlay] = useState(false)
+    const [pauseMatchCount, setPauseMatchCount] = useState(0)
     const lastNudgeThresholdRef = useRef(0)
     const navigatingRef = useRef(false)
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -60,6 +59,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const [myLikedCount, setMyLikedCount] = useState(0)
     const [swipedCount, setSwipedCount] = useState(0)
     const [isHost, setIsHost] = useState(false)
+    const statusRef = useRef<string>("waiting")
+    const countdownStartedRef = useRef(false)
+    const timeLeftRef = useRef(180)
     const NUDGE_THRESHOLD = 3
 
     const normalizeParticipant = (row: Record<string, unknown>): Participant => ({
@@ -88,7 +90,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
         if (moods.length === 0) return
 
-        const pool = await getMoviesByMoods(moods)
+        const uniqueMoods = [...new Set(moods)]
 
         const ottJson = sessionStorage.getItem("selected_ott")
         let ottPlatforms: string[] = []
@@ -98,16 +100,35 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         setSelectedOtt(ottPlatforms)
 
         let ordered: Movie[]
-        if (ottPlatforms.length > 0) {
-            const matched = pool.filter((m) =>
-                m.ott_providers?.some((p) => ottPlatforms.includes(p))
-            )
-            const rest = pool.filter((m) =>
-                !m.ott_providers?.some((p) => ottPlatforms.includes(p))
-            )
-            ordered = [...shuffleWithSeed(matched, seed), ...shuffleWithSeed(rest, seed)]
+
+        if (uniqueMoods.length === 1) {
+            // Both players picked the same mood — flat shuffle (100% overlap)
+            const pool = await getMoviesByMoods(uniqueMoods)
+            if (ottPlatforms.length > 0) {
+                const matched = pool.filter((m) => m.ott_providers?.some((p) => ottPlatforms.includes(p)))
+                const rest = pool.filter((m) => !m.ott_providers?.some((p) => ottPlatforms.includes(p)))
+                ordered = [...shuffleWithSeed(matched, seed), ...shuffleWithSeed(rest, seed)]
+            } else {
+                ordered = shuffleWithSeed(pool, seed)
+            }
         } else {
-            ordered = shuffleWithSeed(pool, seed)
+            // Different moods — fetch each pool separately, then interleave for equal share.
+            // If OTT filter is active: interleave OTT-matched from all moods first,
+            // then interleave the remaining movies.
+            const pools = await Promise.all(uniqueMoods.map((m) => getMoviesByMood(m)))
+            const shuffledPools = pools.map((pool) => shuffleWithSeed(pool, seed))
+
+            if (ottPlatforms.length > 0) {
+                const matchedPools = shuffledPools.map((pool) =>
+                    pool.filter((m) => m.ott_providers?.some((p) => ottPlatforms.includes(p)))
+                )
+                const restPools = shuffledPools.map((pool) =>
+                    pool.filter((m) => !m.ott_providers?.some((p) => ottPlatforms.includes(p)))
+                )
+                ordered = [...interleaveArrays(matchedPools), ...interleaveArrays(restPools)]
+            } else {
+                ordered = interleaveArrays(shuffledPools)
+            }
         }
 
         setMovies(ordered)
@@ -218,6 +239,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             }
 
             setStatus(room.status)
+            statusRef.current = room.status
             roomSeed.current = room.seed ?? null
             createdBy.current = room.created_by ?? null
             setIsHost(room.created_by === user.id)
@@ -271,13 +293,14 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     setMutualMatches(mutual)
                 }
 
-                if (room.status === "paused" && room.created_by === user.id) {
-                    // Set threshold to current mutual count so next nudge triggers at +3
-                    const mutualCount = [...myRightSwipesRef.current].filter(id => otherRightSwipesRef.current.has(id)).length
-                    lastNudgeThresholdRef.current = Math.floor(mutualCount / NUDGE_THRESHOLD) * NUDGE_THRESHOLD
+                if (room.status === "paused") {
+                    if (room.created_by === user.id) {
+                        // Set threshold to current mutual count so next nudge triggers at +3
+                        const mutualCount = [...myRightSwipesRef.current].filter(id => otherRightSwipesRef.current.has(id)).length
+                        lastNudgeThresholdRef.current = Math.floor(mutualCount / NUDGE_THRESHOLD) * NUDGE_THRESHOLD
+                    }
                     setShowNudge(true)
-                } else if (room.status === "paused") {
-                    setShowPauseOverlay(true)
+                    fetchMutualMatches()
                 }
             }
 
@@ -289,31 +312,80 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             const roomChannel = supabase
                 .channel(`room:${code}`)
                 .on('broadcast', { event: 'room_status' }, (payload) => {
-                    const msg = payload.payload as { status: string; matchCount?: number }
+                    const msg = payload.payload as { status: string; matchCount?: number; event?: string; timeLeft?: number }
                     if (msg.status === "paused") {
                         setStatus("paused")
-                        setShowPauseOverlay(true)
-                        if (msg.matchCount) setMutualMatches(prev => prev.length >= (msg.matchCount ?? 0) ? prev : Array(msg.matchCount ?? 0).fill(""))
+                        setShowNudge(true)
+                        if (msg.matchCount) {
+                            setPauseMatchCount(msg.matchCount)
+                            setMutualMatches(prev => prev.length >= msg.matchCount! ? prev : Array(msg.matchCount!).fill(""))
+                        }
                         fetchMutualMatches()
                     } else if (msg.status === "active") {
-                        setStatus("active")
-                        setShowPauseOverlay(false)
+                        setShowNudge(false)
                     } else if (msg.status === "finished") {
                         setStatus("finished")
-                        setShowPauseOverlay(false)
+                        setShowNudge(false)
                         finishAndNavigate()
+                    } else if (msg.event === "timer_sync") {
+                        if (msg.timeLeft !== undefined && !isHost) {
+                            setTimeLeft(msg.timeLeft)
+                        }
+                    } else if (msg.event === "start_countdown") {
+                        // Guest receives countdown start from host
+                        if (statusRef.current === "waiting") {
+                            setCountdown(3)
+                            const t1 = setTimeout(() => setCountdown(2), 1000)
+                            const t2 = setTimeout(() => setCountdown(1), 2000)
+                            const t3 = setTimeout(async () => {
+                                setCountdown(null)
+                                if (statusRef.current !== "waiting") return
+                                statusRef.current = "active"
+                                try {
+                                    const seed = roomSeed.current
+                                    if (seed) {
+                                        const { data: parts } = await supabase
+                                            .from("participants")
+                                            .select("*")
+                                            .eq("room_id", code)
+                                            .order("joined_at", { ascending: true })
+                                        if (parts) {
+                                            await buildDeck(parts.map(normalizeParticipant), seed)
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.error("[guest countdown] deck build failed:", err)
+                                } finally {
+                                    setStatus("active")
+                                }
+                            }, 3000)
+                        }
                     }
                 })
                 .on(
                     'postgres_changes',
                     { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `id=eq.${code}` },
                     async (payload) => {
-                        const newStatus = payload.new.status
+                        const newStatus = payload.new.status as "waiting" | "active" | "paused" | "finished"
+                        const prevStatus = statusRef.current
+
+                        if (newStatus === prevStatus) return
+
+                        statusRef.current = newStatus
                         setStatus(newStatus)
+
                         if (newStatus === "active") {
-                            toast.success("Game Started!")
-                            const seed = payload.new.seed as string
-                            roomSeed.current = seed
+                            if (prevStatus === "waiting" || prevStatus === "paused") {
+                                toast.success("Game Started!")
+                                if (prevStatus === "waiting") {
+                                    trackSessionStart({ mode: "dual", room_code: code, movie_count: movies.length })
+                                }
+                            }
+                            setShowNudge(false)
+
+                            const seed = (payload.new.seed as string) || roomSeed.current
+                            if (seed) roomSeed.current = seed
+
                             const { data: parts } = await supabase
                                 .from("participants")
                                 .select("*")
@@ -322,16 +394,11 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                             if (parts && seed) {
                                 await buildDeck(parts.map(normalizeParticipant), seed)
                             }
-                        }
-                        if (newStatus === "paused") {
-                            setShowPauseOverlay(true)
+                        } else if (newStatus === "paused") {
+                            setShowNudge(true)
                             fetchMutualMatches()
-                        }
-                        if (newStatus === "active") {
-                            setShowPauseOverlay(false)
-                        }
-                        if (newStatus === "finished") {
-                            setShowPauseOverlay(false)
+                        } else if (newStatus === "finished") {
+                            setShowNudge(false)
                             finishAndNavigate()
                         }
                     }
@@ -400,59 +467,146 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     }, [status, fetchParticipants])
 
     useEffect(() => {
-        if (!allReady || status !== "waiting") {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setCountdown(null)
+        if (!allReady || status !== "waiting" || !isHost) {
+            // Only reset the countdown display if the sequence hasn't started yet
+            if ((!allReady || status !== "waiting") && !countdownStartedRef.current) {
+                setCountdown(null)
+            }
             return
         }
+
+        // Fire exactly once — prevent allReady flicker from restarting or cancelling
+        if (countdownStartedRef.current) return
+        countdownStartedRef.current = true
+
+        // Host triggers the countdown for everyone
+        channelRef.current?.send({
+            type: "broadcast",
+            event: "room_status",
+            payload: { event: "start_countdown" },
+        })
 
         setCountdown(3)
         const t1 = setTimeout(() => setCountdown(2), 1000)
         const t2 = setTimeout(() => setCountdown(1), 2000)
         const t3 = setTimeout(async () => {
-            setCountdown(0)
-
-            const seed = roomSeed.current
-            if (seed) {
-                const { data: parts } = await supabase
-                    .from("participants")
-                    .select("*")
-                    .eq("room_id", code)
-                    .order("joined_at", { ascending: true })
-                if (parts) {
-                    await buildDeck(parts.map(normalizeParticipant), seed)
+            setCountdown(null)
+            // Set statusRef early so the Postgres change that arrives later returns early.
+            statusRef.current = "active"
+            try {
+                const seed = roomSeed.current
+                if (seed) {
+                    const { data: parts } = await supabase
+                        .from("participants")
+                        .select("*")
+                        .eq("room_id", code)
+                        .order("joined_at", { ascending: true })
+                    if (parts) {
+                        await buildDeck(parts.map(normalizeParticipant), seed)
+                    }
                 }
+            } catch (err) {
+                console.error("[host countdown] deck build failed:", err)
             }
-
-            setStatus("active")
-            trackSessionStart({ mode: "dual", room_code: code, movie_count: movies.length })
+            // Write started_at to DB BEFORE setStatus so the timer useEffect
+            // finds it when it fetches on status change.
             await supabase
                 .from("rooms")
-                .update({ status: "active", started_at: new Date().toISOString() })
+                .update({
+                    status: "active",
+                    started_at: new Date().toISOString()
+                })
                 .eq("id", code)
+            // Transition UI — always runs even if deck build errored
+            setStatus("active")
+            trackSessionStart({ mode: "dual", room_code: code, movie_count: movies.length })
         }, 3000)
 
+        // Don't clear timeouts in cleanup once the countdown has started —
+        // a dep change (e.g. allReady flickering) must not cancel t3.
         return () => {
-            clearTimeout(t1)
-            clearTimeout(t2)
-            clearTimeout(t3)
+            if (!countdownStartedRef.current) {
+                clearTimeout(t1)
+                clearTimeout(t2)
+                clearTimeout(t3)
+            }
         }
-    }, [allReady, status, supabase, code])
+    }, [allReady, status, supabase, code, isHost, buildDeck])
+
+    // Non-host: poll room status as a guaranteed fallback while waiting.
+    // The broadcast t3 and Postgres change can both miss in edge cases;
+    // this poll catches the transition within 500ms of the host's DB write.
+    useEffect(() => {
+        if (status !== "waiting" || isHost) return
+
+        const poll = setInterval(async () => {
+            if (statusRef.current !== "waiting") {
+                clearInterval(poll)
+                return
+            }
+            const { data: room } = await supabase
+                .from("rooms")
+                .select("status, seed")
+                .eq("id", code)
+                .single()
+
+            if (room?.status === "active") {
+                statusRef.current = "active"
+                const seed = (room.seed as string | null) || roomSeed.current
+                if (seed) {
+                    roomSeed.current = seed
+                    const { data: parts } = await supabase
+                        .from("participants")
+                        .select("*")
+                        .eq("room_id", code)
+                        .order("joined_at", { ascending: true })
+                    if (parts) {
+                        try {
+                            await buildDeck(parts.map(normalizeParticipant), seed)
+                        } catch { /* silently continue — screen will transition regardless */ }
+                    }
+                }
+                setStatus("active")
+            }
+        }, 500)
+
+        return () => clearInterval(poll)
+        // normalizeParticipant is a stable pure fn — omitting from deps intentionally
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status, isHost, supabase, code, buildDeck])
 
     useEffect(() => {
         if (status === "active" && !timerStarted.current) {
             timerStarted.current = true
-            timerRef.current = setInterval(() => {
-                setTimeLeft(prev => {
-                    if (prev <= 1) {
-                        if (timerRef.current) clearInterval(timerRef.current)
-                        return 0
-                    }
-                    return prev - 1
-                })
-            }, 1000)
+
+            // Retry until started_at is written — the host writes it just before
+            // setStatus("active"), but the non-host may transition via t3 before
+            // the DB write propagates.
+            const syncTimer = async (attempt = 0) => {
+                const { data: room } = await supabase
+                    .from("rooms")
+                    .select("started_at")
+                    .eq("id", code)
+                    .single()
+
+                if (room?.started_at) {
+                    const start = new Date(room.started_at).getTime()
+                    timerRef.current = setInterval(() => {
+                        const now = Date.now()
+                        const elapsed = Math.floor((now - start) / 1000)
+                        const remaining = Math.max(0, 180 - elapsed)
+                        setTimeLeft(remaining)
+                        if (remaining <= 0 && timerRef.current) {
+                            clearInterval(timerRef.current)
+                        }
+                    }, 1000)
+                } else if (attempt < 10) {
+                    setTimeout(() => syncTimer(attempt + 1), 300)
+                }
+            }
+            syncTimer()
         }
-    }, [status])
+    }, [status, supabase, code])
 
     useEffect(() => {
         return () => {
@@ -468,52 +622,31 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         }
     }, [timeLeft, status, finishAndNavigate])
 
+    // Keep timeLeftRef in sync so the heartbeat always broadcasts the current value
+    // without causing the intervals below to restart every second.
+    useEffect(() => { timeLeftRef.current = timeLeft }, [timeLeft])
+
+    // Nudge poll — runs every 2s while host is active.
+    // Deliberately excludes timeLeft from deps so the interval isn't reset each second.
     useEffect(() => {
         if (status !== "active" || createdBy.current !== userIdRef.current) return
         const poll = setInterval(() => { checkNudge() }, 2000)
         return () => clearInterval(poll)
     }, [status, checkNudge])
 
-    // Safety net: sync showPauseOverlay from status changes for non-host
+    // Timer-sync heartbeat — broadcasts current timeLeft to non-host every 5s.
     useEffect(() => {
-        if (createdBy.current === userIdRef.current) return // host uses NudgeOverlay, not PauseOverlay
-        if (status === "paused") {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setShowPauseOverlay(true)
-            fetchMutualMatches()
-        } else if (status === "active") {
-            setShowPauseOverlay(false)
-        } else if (status === "finished") {
-            setShowPauseOverlay(false)
-        }
-    }, [status, fetchMutualMatches])
+        if (status !== "active" || createdBy.current !== userIdRef.current) return
+        const heartbeat = setInterval(() => {
+            channelRef.current?.send({
+                type: "broadcast",
+                event: "room_status",
+                payload: { event: "timer_sync", timeLeft: timeLeftRef.current },
+            })
+        }, 5000)
+        return () => clearInterval(heartbeat)
+    }, [status])
 
-    useEffect(() => {
-        if (status === "waiting" || status === "finished") return
-        if (createdBy.current === userIdRef.current) return
-        const poll = setInterval(async () => {
-            const { data: room } = await supabase
-                .from("rooms")
-                .select("status")
-                .eq("id", code)
-                .single()
-            if (!room) return
-            const dbStatus = room.status as "waiting" | "active" | "paused" | "finished"
-            if (dbStatus === "finished") {
-                setStatus("finished")
-                finishAndNavigate()
-            } else if (dbStatus !== status) {
-                setStatus(dbStatus)
-                if (dbStatus === "paused") {
-                    setShowPauseOverlay(true)
-                    fetchMutualMatches()
-                } else {
-                    setShowPauseOverlay(false)
-                }
-            }
-        }, 1000)
-        return () => clearInterval(poll)
-    }, [status, supabase, code, finishAndNavigate, fetchMutualMatches])
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60).toString().padStart(2, "0")
@@ -822,16 +955,13 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                     </div>
                 </div>
 
-                {isHost && (
-                    <NudgeOverlay
-                        show={showNudge}
-                        likedCount={mutualMatches.length}
-                        onContinue={handleNudgeContinue}
-                        onCheckShortlist={handleNudgeCheckShortlist}
-                    />
-                )}
-
-                {!isHost && <PauseOverlay show={showPauseOverlay} matchCount={mutualMatches.length} />}
+                <NudgeOverlay
+                    show={showNudge}
+                    likedCount={pauseMatchCount || mutualMatches.length}
+                    onContinue={handleNudgeContinue}
+                    onCheckShortlist={handleNudgeCheckShortlist}
+                    isHost={isHost}
+                />
             </div>
         )
     }
