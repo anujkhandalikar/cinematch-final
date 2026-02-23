@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:movies": "tsx scripts/seed-movies-from-tmdb.ts"
+    "seed:movies": "tsx scripts/seed-movies-from-tmdb.ts",
+    "seed:anuj-picks": "tsx scripts/seed-anuj-picks.ts"
   },
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.8",

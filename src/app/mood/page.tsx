@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp, Shuffle, ArrowRight, Sparkles } from "lucide-react"
+import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp, Shuffle, ArrowRight, Sparkles, Film } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getAvailableProviders, type Mood } from "@/lib/movies"
-import { trackMoodSelected, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack } from "@/lib/analytics"
+import { trackMoodSelected, trackMoodPillClick, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack, trackAiSearchSubmitted, trackAiSearchSessionStarted, trackShuffleClicked } from "@/lib/analytics"
 
 const NOISE_TEXTURE = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")"
 
@@ -24,6 +24,13 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
         description: "Feel-good, easy watches",
         icon: <PartyPopper className="w-7 h-7" />,
         gradient: "from-pink-500/60 via-pink-900/30 to-transparent",
+    },
+    {
+        id: "anuj_picks",
+        label: "Anuj's Picks",
+        description: "Handpicked by Anuj",
+        icon: <Film className="w-7 h-7" />,
+        gradient: "from-violet-500/60 via-violet-900/30 to-transparent",
     },
     {
         id: "bollywood",
@@ -105,13 +112,14 @@ export default function MoodPage() {
 
     // Initialize with the requested default moods
     useEffect(() => {
-        const defaultMoodIds = ["light_and_fun", "latest", "imdb_top"]
+        const defaultMoodIds = ["light_and_fun", "latest", "anuj_picks"]
         const initialMoods = MOODS.filter(m => defaultMoodIds.includes(m.id))
         setDisplayedMoods(initialMoods)
     }, [])
 
     // Shuffle exactly 3 cards
     const handleShuffle = () => {
+        trackShuffleClicked()
         setCardsVisible(false)
         setTimeout(() => {
             const currentIds = displayedMoods.map(m => m.id)
@@ -132,7 +140,7 @@ export default function MoodPage() {
             setAvailableProviders(providers)
             setLoadingProviders(false)
         })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMood, aiQuery])
 
     const handleMoodSelect = (mood: Mood) => {
@@ -147,6 +155,7 @@ export default function MoodPage() {
         }
         setSelectedMood(mood)
         trackMoodSelected(mood)
+        trackMoodPillClick(mood, MOODS.find((m) => m.id === mood)?.label ?? mood)
         sessionStorage.setItem("selected_mood", mood)
     }
 
@@ -154,6 +163,7 @@ export default function MoodPage() {
         const trimmed = aiInput.trim()
         if (!trimmed) return
         console.log("[ai-search] submit query:", trimmed)
+        trackAiSearchSubmitted(trimmed)
         // Clear mood selection when AI query is submitted
         setSelectedMood(null)
         setAiQuery(trimmed)
@@ -170,19 +180,22 @@ export default function MoodPage() {
     }
 
     const handleContinue = () => {
+        if (aiQuery) {
+            // Ignore OTT pills selection for AI searches
+            trackAiSearchSessionStarted(aiQuery)
+            sessionStorage.removeItem("selected_ott")
+            sessionStorage.setItem("ai_search_query", aiQuery)
+            sessionStorage.removeItem("selected_mood")
+            router.push("/solo")
+            return
+        }
+
         if (selectedProviders.length > 0) {
             trackOttSelected(selectedProviders)
             sessionStorage.setItem("selected_ott", JSON.stringify(selectedProviders))
         } else {
             trackOttSkipped()
             sessionStorage.removeItem("selected_ott")
-        }
-
-        if (aiQuery) {
-            sessionStorage.setItem("ai_search_query", aiQuery)
-            sessionStorage.removeItem("selected_mood")
-            router.push("/solo")
-            return
         }
 
         const mode = sessionStorage.getItem("selected_mode")

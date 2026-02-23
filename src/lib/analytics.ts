@@ -169,6 +169,42 @@ export function trackMutualMatch(room_code: string, match_count: number) {
 }
 
 // ──────────────────────────────────────────
+// AI SEARCH
+// ──────────────────────────────────────────
+
+export function trackAiSearchSubmitted(query: string) {
+  trackEvent({ action: "ai_search_submitted", category: "ai_search", query });
+}
+
+export function trackAiSearchSessionStarted(query: string) {
+  trackEvent({ action: "ai_search_session_started", category: "ai_search", query });
+}
+
+export function trackAiSearchSuccess(query: string) {
+  trackEvent({ action: "ai_search_success", category: "ai_search", query });
+}
+
+export function trackAiSearchError(query: string) {
+  trackEvent({ action: "ai_search_error", category: "ai_search", query });
+}
+
+// ──────────────────────────────────────────
+// MOOD PILL
+// ──────────────────────────────────────────
+
+export function trackMoodPillClick(mood_id: string, mood_label: string) {
+  trackEvent({ action: "mood_pill_click", category: "engagement", mood_id, mood_label });
+}
+
+// ──────────────────────────────────────────
+// SHUFFLE
+// ──────────────────────────────────────────
+
+export function trackShuffleClicked() {
+  trackEvent({ action: "shuffle_clicked", category: "engagement" });
+}
+
+// ──────────────────────────────────────────
 // RESULTS
 // ──────────────────────────────────────────
 

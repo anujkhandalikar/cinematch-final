@@ -7,7 +7,7 @@ import { SwipeDeck } from "@/components/SwipeDeck"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock } from "lucide-react"
-import { trackSessionStart, trackSessionComplete, trackSwipe, trackNudgeShown, trackNavBack } from "@/lib/analytics"
+import { trackSessionStart, trackSessionComplete, trackSwipe, trackNudgeShown, trackNavBack, trackAiSearchSuccess, trackAiSearchError } from "@/lib/analytics"
 
 // Shuffle helper
 const shuffle = <T,>(array: T[]): T[] => {
@@ -95,6 +95,7 @@ export default function SoloPage() {
                     if (result instanceof Response) {
                         const reader = result.body?.getReader()
                         if (!reader) {
+                            trackAiSearchError(aiSearchQuery)
                             router.push("/mood")
                             return
                         }
@@ -121,17 +122,19 @@ export default function SoloPage() {
                                         setMovies((prev) => [...prev, ...msg.movies!])
                                     } else if (msg.type === "done") {
                                         setStreamDone(true)
+                                        trackAiSearchSuccess(aiSearchQuery)
                                         trackSessionStart({ mode: "solo", mood: "imdb_top", ott_count: 0, movie_count: total })
                                     }
                                 }
                             }
                         }
-                        readLoop().catch(() => router.push("/mood"))
+                        readLoop().catch(() => { trackAiSearchError(aiSearchQuery); router.push("/mood") })
                         return
                     }
                     console.log("[ai-search] response:", result)
                     if (result.type === "error") {
                         console.error("[ai-search] error:", result.message ?? result.error)
+                        trackAiSearchError(aiSearchQuery)
                         router.push("/mood")
                         return
                     }
@@ -140,6 +143,7 @@ export default function SoloPage() {
                         isTmdbSessionRef.current = true
                         setStreamDone(true)
                         setMovies(result.movies)
+                        trackAiSearchSuccess(aiSearchQuery)
                         trackSessionStart({ mode: "solo", mood: "imdb_top", ott_count: 0, movie_count: result.movies.length })
                     } else {
                         // Vibe path — same as mood pill flow
@@ -155,12 +159,14 @@ export default function SoloPage() {
                             }
                             setMovies(ordered)
                             setStreamDone(true)
+                            trackAiSearchSuccess(aiSearchQuery)
                             trackSessionStart({ mode: "solo", mood: result.mood, ott_count: ottPlatforms.length, movie_count: ordered.length })
                         })
                     }
                 })
                 .catch(() => {
                     clearInterval(interval)
+                    trackAiSearchError(aiSearchQuery)
                     router.push("/mood")
                 })
         } else if (mood) {

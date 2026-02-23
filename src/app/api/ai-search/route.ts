@@ -97,6 +97,10 @@ type ParsedQuery = {
     mediaType: "movie" | "tv" | "any"
     titleCandidate?: string
     subjective?: boolean
+    similarTo?: string
+    ott_platforms?: string[]
+    max_runtime?: number
+    primary_intent?: "Vibe" | "OTT" | "Runtime" | "Similarity"
 }
 
 type LlmExtract = {
@@ -115,6 +119,10 @@ type LlmExtract = {
         award?: boolean
     }
     mediaType?: "movie" | "tv" | "any"
+    similarTo?: string | null
+    ott_platforms?: string[]
+    max_runtime?: number | null
+    primary_intent?: "Vibe" | "OTT" | "Runtime" | "Similarity" | null
 }
 
 interface TmdbItem {
@@ -504,6 +512,23 @@ const GENRE_TO_MOODS: Record<string, string[]> = {
     Action: ["intense"],
 }
 
+function parseRuntime(query: string): number | undefined {
+    const q = query.toLowerCase()
+    // "under X mins" / "under X minutes"
+    const underMins = q.match(/under\s+(\d+)\s*(?:min|mins|minutes)/)
+    if (underMins) return parseInt(underMins[1], 10)
+    // "under X hours" / "under X.X hours" / "under 1.5 hours"
+    const underHours = q.match(/under\s+(\d+(?:\.\d+)?)\s*(?:hour|hours|hr|hrs)/)
+    if (underHours) return Math.round(parseFloat(underHours[1]) * 60)
+    // "X hour dinner" / "X hour lunch" / contextual "X hour something"
+    const hourContext = q.match(/(\d+(?:\.\d+)?)\s*(?:hour|hr)\b/)
+    if (hourContext) return Math.round(parseFloat(hourContext[1]) * 60) + 10
+    // keyword-based
+    if (q.includes("short")) return 95
+    if (q.includes("quick")) return 75
+    return undefined
+}
+
 function detectMoodTags(query: string): string[] {
     const q = query.toLowerCase()
     const tags: string[] = []
@@ -682,6 +707,20 @@ function parseQuery(query: string): ParsedQuery {
         titleCandidate = undefined
     }
 
+    let similarTo: string | undefined
+    const similarMatch = q.match(/\b(?:like|similar to)\s+(?:the\s+)?([a-z0-9\s]+)/i)
+    if (similarMatch && similarMatch[1]) {
+        // Exclude generic suffixes from the captured title
+        const rawSimilar = similarMatch[1].trim()
+        const words = rawSimilar.split(/\s+/)
+        const validWords = words.filter(w => !GENERIC_WORDS.has(w) && !INTENT_KEYWORDS.has(w) && !isMoodKeyword(w))
+        if (validWords.length > 0) {
+            similarTo = validWords.join(" ")
+            // if we found a similarTo, the titleCandidate is likely wrong (e.g. "movies like inception" -> titleCandidate "movies like inception")
+            titleCandidate = undefined
+        }
+    }
+
     const expandedMoodTags = [...moodTags]
     for (const g of includeGenres) {
         const mapped = GENRE_TO_MOODS[g]
@@ -691,6 +730,8 @@ function parseQuery(query: string): ParsedQuery {
             }
         }
     }
+
+    const max_runtime = parseRuntime(query)
 
     return {
         raw: query,
@@ -706,42 +747,13 @@ function parseQuery(query: string): ParsedQuery {
         titleCandidate,
         subjective,
         mediaType,
+        similarTo,
+        ott_platforms: undefined as string[] | undefined,
+        max_runtime,
     }
 }
 
-/** GPT is only called for pure vibe queries — no factual signals were found */
-async function classifyVibe(query: string): Promise<Mood> {
-    if (!process.env.OPENAI_API_KEY && !process.env.open_api_key) {
-        return "imdb_top"
-    }
-    const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        temperature: 0,
-        max_tokens: 60,
-        messages: [
-            {
-                role: "system",
-                content: `Map this movie request to the closest mood. Return ONLY the mood key, nothing else.
 
-Available moods:
-- light_and_fun: feel-good, easy watches, cheerful, uplifting
-- imdb_top: critically acclaimed, masterpieces, best ever made
-- oscar: award-winning, prestige cinema
-- srk: Shah Rukh Khan films
-- latest: new releases, trending
-- gritty_thrillers: dark, tense, edge-of-your-seat, slow burn, atmospheric
-- quick_watches: short movies, under 90 minutes
-- reality_and_drama: reality TV, bingeable drama
-- whats_viral: what everyone is talking about`,
-            },
-            { role: "user", content: query },
-        ],
-    })
-
-    const mood = (completion.choices[0].message.content ?? "").trim() as Mood
-    const valid: Mood[] = ["light_and_fun", "imdb_top", "oscar", "srk", "latest", "gritty_thrillers", "quick_watches", "reality_and_drama", "whats_viral"]
-    return valid.includes(mood) ? mood : "imdb_top"
-}
 
 function normalizeLanguage(value?: string | null): string | undefined {
     if (!value) return undefined
@@ -773,11 +785,48 @@ async function extractWithLLM(query: string): Promise<LlmExtract> {
     const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         temperature: 0,
-        max_tokens: 220,
+        max_tokens: 350,
         messages: [
             {
                 role: "system",
-                content: `Extract structured movie or TV show search intent as JSON. Return ONLY valid JSON.\n\nSchema:\n{\n  \"title\": string | null,\n  \"keywords\": string[],\n  \"year\": number | null,\n  \"yearRange\": {\"start\": number, \"end\": number} | null,\n  \"language\": string | null,      // ISO 639-1 if possible, else language name\n  \"region\": string | null,        // ISO 3166-1 if possible\n  \"includeGenres\": string[],      // genre names like Comedy, Thriller, "Action & Adventure", "Sci-Fi & Fantasy"\n  \"excludeGenres\": string[],\n  \"moodTags\": string[],           // mood/emotion tags like sad, dark, intense, feel_good, uplifting\n  \"intent\": {\"top\": boolean, \"latest\": boolean, \"award\": boolean},\n  \"mediaType\": \"movie\" | \"tv\" | \"any\"\n}\n\nRules:\n- If it specifies shows, series, or tv, set mediaType to "tv". If it specifies movies or films, set mediaType to "movie". Otherwise "any".\n- If decade is mentioned (e.g., 90s), set yearRange.\n- If exact year, set year.\n- If title is explicit, set title.\n- Populate keywords with remaining meaningful tokens.\n- Map emotional adjectives to moodTags when possible.\n- Use empty arrays when none.\n- Do not include extra fields.`,
+                content: `You are a Movie Search Specialist. Extract structured search intent from the user's query and return ONLY valid JSON.
+
+Map the query to one or more of these 4 use cases:
+1. Vibe: emotional goal (e.g. "sad", "mind-blowing", "light")
+2. OTT: streaming platform filter
+3. Runtime: time constraint (e.g. "short", "under 90 mins")
+4. Similarity: find movies like a named title
+
+Schema:
+{
+  "primary_intent": "Vibe" | "OTT" | "Runtime" | "Similarity" | null,
+  "title": string | null,
+  "keywords": string[],
+  "year": number | null,
+  "yearRange": {"start": number, "end": number} | null,
+  "language": string | null,
+  "region": string | null,
+  "includeGenres": string[],
+  "excludeGenres": string[],
+  "moodTags": string[],
+  "intent": {"top": boolean, "latest": boolean, "award": boolean},
+  "mediaType": "movie" | "tv" | "any",
+  "similarTo": string | null,
+  "ott_platforms": string[],
+  "max_runtime": number | null
+}
+
+Rules:
+- primary_intent: pick the dominant use case. If multiple apply, pick the one most clearly stated.
+- max_runtime: integer in minutes. Map "short" → 95, "quick" → 75, "under 1.5 hours" → 95, "1 hour dinner" → 70, "under X mins" → X, "under X hours" → X*60. Null if not mentioned.
+- ott_platforms: only if explicitly named. Choose from: ["netflix", "amazon_prime", "hulu", "disney_plus", "apple_tv", "hbo", "peacock", "paramount_plus", "zee5", "mubi", "lionsgate_play", "hotstar", "sonyliv", "jio_cinema"].
+- similarTo: only populate if the query has "like" or "similar to" followed by a title.
+- mediaType: "tv" if shows/series, "movie" if movies/films, otherwise "any".
+- yearRange: set for decades (e.g. "90s" → {"start": 1990, "end": 1999}).
+- keywords: remaining meaningful plot/emotion words not covered by other fields.
+- moodTags: emotional/mood tags like sad, dark, intense, feel_good, uplifting, mind_bending.
+- Use empty arrays (not null) for array fields when nothing applies.
+- Do not include extra fields.`,
             },
             { role: "user", content: query },
         ],
@@ -843,6 +892,9 @@ async function fetchTmdbPage(params: URLSearchParams, page: number, mediaType: "
         if (p.get("sort_by") === "primary_release_date.desc") {
             p.set("sort_by", "first_air_date.desc")
         }
+        // TV episode runtime ≠ movie runtime — apply loosely by not filtering TV results
+        p.delete("with_runtime.lte")
+        p.delete("with_runtime.gte")
     }
     p.set("page", String(page))
     const apiKey = process.env.TMDB_API_KEY?.replace(/\\n/g, '')?.trim()
@@ -903,7 +955,7 @@ function sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function fetchWithRetry(url: string, attempts = 2, baseDelayMs = 200, timeoutMs = 3500): Promise<Response> {
+async function fetchWithRetry(url: string, attempts = 2, baseDelayMs = 200, timeoutMs = 8000): Promise<Response> {
     let lastError: unknown
     for (let i = 0; i < attempts; i++) {
         try {
@@ -1128,11 +1180,37 @@ function buildDiscoverParams(parsed: ParsedQuery, options: { relaxVoteCount?: bo
 
     if (parsed.language) params.set("with_original_language", parsed.language)
     if (parsed.region) params.set("region", parsed.region)
+    if (parsed.ott_platforms && parsed.ott_platforms.length > 0) {
+        // Map extracted OTT names to TMDB Provider IDs (US generic for most, but region takes precedence later)
+        const TMDB_PROVIDERS: Record<string, string> = {
+            "netflix": "8",
+            "amazon_prime": "9",
+            "hulu": "15",
+            "disney_plus": "337",
+            "apple_tv": "350",
+            "hbo": "1899", // Max
+            "peacock": "384",
+            "paramount_plus": "531",
+            "zee5": "231",
+            "mubi": "11",
+            "lionsgate_play": "582",
+            "hotstar": "119",
+            "sonyliv": "325",
+            "jio_cinema": "220"
+        }
+        const ids = parsed.ott_platforms.map(p => TMDB_PROVIDERS[p]).filter(Boolean)
+        if (ids.length > 0) {
+            params.set("with_watch_providers", ids.join("|"))
+            params.set("watch_region", parsed.region || "US")
+        }
+    }
 
     const includeIds = (parsed.includeGenres ?? []).map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean)
     if (includeIds.length > 0) params.set("with_genres", includeIds.join(","))
     const excludeIds = (parsed.excludeGenres ?? []).map((g) => GENRE_NAME_TO_ID[g]).filter(Boolean)
     if (excludeIds.length > 0) params.set("without_genres", excludeIds.join(","))
+
+    if (parsed.max_runtime) params.set("with_runtime.lte", String(parsed.max_runtime))
 
     const today = new Date()
     if (parsed.intent.latest && !options.ignoreLatestWindow) {
@@ -1215,16 +1293,26 @@ export async function POST(req: NextRequest) {
 
         const wantsStream = req.nextUrl.searchParams.get("stream") === "1"
 
+        const reqRegionHeader = req.headers.get("x-vercel-ip-country") || undefined
+
         const heuristic = parseQuery(query)
         const llm = await extractWithLLM(query)
         debug.llm = llm
+
+        // Guard: only trust LLM's similarTo if the query explicitly has similarity keywords.
+        // Prevents the LLM from treating language names ("hindi") as movie titles.
+        const hasSimilarKeyword = /\b(?:like|similar\s+to)\b/i.test(query)
+        // Guard: only trust LLM's ott_platforms if the query explicitly names a platform.
+        // Prevents the LLM from hallucinating Indian OTT platforms for queries like "hindi movies".
+        const KNOWN_PLATFORM_KEYWORDS = ["netflix", "amazon", "prime", "hulu", "disney", "apple tv", "apple tv+", "hbo", "peacock", "paramount", "zee5", "mubi", "lionsgate", "hotstar", "sonyliv", "jio cinema", "jiocinema"]
+        const hasExplicitPlatform = KNOWN_PLATFORM_KEYWORDS.some(p => query.toLowerCase().includes(p))
 
         const merged: ParsedQuery = {
             ...heuristic,
             year: llm.year ?? heuristic.year,
             yearRange: llm.yearRange ?? heuristic.yearRange,
             language: normalizeLanguage(llm.language ?? heuristic.language),
-            region: llm.region ?? inferRegion(normalizeLanguage(llm.language ?? heuristic.language)),
+            region: llm.region ?? inferRegion(normalizeLanguage(llm.language ?? heuristic.language)) ?? reqRegionHeader,
             includeGenres: normalizeGenres(llm.includeGenres) ?? heuristic.includeGenres,
             excludeGenres: normalizeGenres(llm.excludeGenres) ?? heuristic.excludeGenres,
             moodTags: normalizeMoodTags(llm.moodTags) ?? heuristic.moodTags,
@@ -1234,6 +1322,10 @@ export async function POST(req: NextRequest) {
                 award: llm.intent?.award ?? heuristic.intent.award,
             },
             titleCandidate: llm.title ?? (llm.keywords && llm.keywords.length > 0 ? llm.keywords.join(" ") : heuristic.titleCandidate),
+            similarTo: hasSimilarKeyword ? (llm.similarTo ?? heuristic.similarTo) : heuristic.similarTo,
+            ott_platforms: hasExplicitPlatform ? llm.ott_platforms : undefined,
+            max_runtime: llm.max_runtime ?? heuristic.max_runtime,
+            primary_intent: llm.primary_intent ?? undefined,
         }
 
         debug.parsed = merged
@@ -1241,11 +1333,16 @@ export async function POST(req: NextRequest) {
 
         let path: "search" | "discover" = "discover"
         const hasFilters = Boolean(
-            merged.year || merged.yearRange || merged.language || (merged.includeGenres && merged.includeGenres.length > 0)
+            merged.year || merged.yearRange || merged.language || (merged.includeGenres && merged.includeGenres.length > 0) || merged.max_runtime
         )
-        if (!hasFilters && merged.titleCandidate) {
+        if (!hasFilters && merged.titleCandidate && !merged.similarTo) {
             path = "search"
         }
+        // primary_intent hard floors: Runtime and OTT always need discover (search has no filter support for them)
+        if (merged.primary_intent === "Runtime" || merged.primary_intent === "OTT") {
+            path = "discover"
+        }
+        // Force factual search path: skip local database vibe checks entirely
 
         if (wantsStream) {
             const encoder = new TextEncoder()
@@ -1257,7 +1354,59 @@ export async function POST(req: NextRequest) {
                         const maxPages = 5
                         let params = ""
 
-                        if (path === "search" && merged.titleCandidate) {
+                        if (merged.similarTo) {
+                            path = "search"
+                            const baseParams = new URLSearchParams({ query: merged.similarTo })
+                            const baseResults = await fetchTmdbSearchPage(baseParams, 1, merged.mediaType === "any" ? "multi" : merged.mediaType)
+                            if (baseResults.length > 0) {
+                                const baseMovie = baseResults[0]
+                                const bmType = (baseMovie as any).media_type || "movie"
+                                const simRes = await fetchWithRetry(`${TMDB_BASE}/${bmType}/${baseMovie.id}/recommendations?api_key=${process.env.TMDB_API_KEY?.replace(/\\n/g, '')?.trim()}&page=1`)
+                                if (simRes.ok) {
+                                    const simData = (await simRes.json()) as { results: (TmdbItem & { media_type?: string })[] }
+                                    let recs = simData.results ?? []
+                                    recs.forEach(r => { if (!r.media_type) r.media_type = bmType })
+                                    let movies = recs.filter(t => t.poster_path).map(tmdbToMovie)
+                                    params = `similarTo:${baseMovie.id}`
+
+                                    if (merged.year) movies = filterByYear(movies, merged.year)
+                                    const moodApplied = applyMoodToolset(merged, movies)
+                                    movies = moodApplied.movies
+
+                                    if (movies.length >= 10) {
+                                        await streamBatches(controller, encoder, {
+                                            type: "meta",
+                                            debug: { ...debug, path, params, mood_filters: moodApplied.applied },
+                                        })
+                                        let total = 0
+                                        for (let i = 0; i < movies.length && total < maxResults; i += 20) {
+                                            const batch = movies.slice(i, i + 20)
+                                            total += batch.length
+                                            await streamBatches(controller, encoder, { type: "batch", movies: batch })
+                                        }
+                                        await streamBatches(controller, encoder, { type: "done", count: total })
+                                        controller.close()
+                                        return
+                                    } else {
+                                        debug.fallback = "similar_to_discover"
+                                        const newGenres = Array.from(new Set([...(merged.includeGenres || []), ...baseMovie.genre_ids.map(id => GENRE_ID_TO_NAME[id]).filter(Boolean)]))
+                                        merged.includeGenres = newGenres.length > 0 ? newGenres : undefined
+                                        path = "discover"
+                                        merged.similarTo = undefined
+                                    }
+                                } else {
+                                    debug.fallback = "similar_failed"
+                                    path = merged.titleCandidate ? "search" : "discover"
+                                    merged.similarTo = undefined
+                                }
+                            } else {
+                                debug.fallback = "similar_not_found"
+                                path = merged.titleCandidate ? "search" : "discover"
+                                merged.similarTo = undefined
+                            }
+                        }
+
+                        if (path === "search" && merged.titleCandidate && !merged.similarTo) {
                             const searchParams = new URLSearchParams({ query: merged.titleCandidate })
                             if (merged.year) searchParams.set("year", String(merged.year))
                             params = searchParams.toString()
@@ -1276,46 +1425,65 @@ export async function POST(req: NextRequest) {
                             await streamBatches(controller, encoder, { type: "done", count: total })
                             controller.close()
                             return
+                        } else if (path === "search" && !merged.titleCandidate && !merged.similarTo) {
+                            path = "discover"
                         }
 
-                        const discoverParams = buildDiscoverParams(merged)
-                        const page1 = await fetchTmdbPage(discoverParams, 1)
-                        if (page1.length === 0 && merged.year) {
-                            const dropped = buildDiscoverParams(merged, { ignoreYear: true, ignoreLatestWindow: true })
-                            params = dropped.toString()
-                            debug.fallback = "drop_year_keep_language"
+                        if (path === "discover") {
+                            const discoverParams = buildDiscoverParams(merged)
+                            const page1 = await fetchTmdbPage(discoverParams, 1)
+                            if (page1.length === 0 && !merged.year && merged.ott_platforms && merged.ott_platforms.length > 0) {
+                                // OTT filter produced no results — retry without it
+                                debug.fallback = "drop_ott_filter"
+                                merged.ott_platforms = undefined
+                                const relaxedParams = buildDiscoverParams(merged)
+                                params = relaxedParams.toString()
+                                await streamBatches(controller, encoder, {
+                                    type: "meta",
+                                    debug: { ...debug, path, params, mood_filters: moodMeta.applied },
+                                })
+                                const total = await streamDiscoverPagesIncremental(relaxedParams, merged, maxPages, maxResults, controller, encoder)
+                                await streamBatches(controller, encoder, { type: "done", count: total })
+                                controller.close()
+                                return
+                            }
+                            if (page1.length === 0 && merged.year) {
+                                const dropped = buildDiscoverParams(merged, { ignoreYear: true, ignoreLatestWindow: true })
+                                params = dropped.toString()
+                                debug.fallback = "drop_year_keep_language"
+                                await streamBatches(controller, encoder, {
+                                    type: "meta",
+                                    debug: { ...debug, path, params, mood_filters: moodMeta.applied },
+                                })
+                                const collected = await collectDiscoverPages(dropped, merged, maxPages, maxResults)
+                                const sorted = sortByClosestYear(collected, merged.year)
+                                let total = 0
+                                for (let i = 0; i < sorted.length; i += 20) {
+                                    const batch = sorted.slice(i, i + 20)
+                                    total += batch.length
+                                    await streamBatches(controller, encoder, { type: "batch", movies: batch })
+                                }
+                                await streamBatches(controller, encoder, { type: "done", count: total })
+                                controller.close()
+                                return
+                            }
+
+                            params = discoverParams.toString()
                             await streamBatches(controller, encoder, {
                                 type: "meta",
                                 debug: { ...debug, path, params, mood_filters: moodMeta.applied },
                             })
-                            const collected = await collectDiscoverPages(dropped, merged, maxPages, maxResults)
-                            const sorted = sortByClosestYear(collected, merged.year)
-                            let total = 0
-                            for (let i = 0; i < sorted.length; i += 20) {
-                                const batch = sorted.slice(i, i + 20)
-                                total += batch.length
-                                await streamBatches(controller, encoder, { type: "batch", movies: batch })
-                            }
+                            const total = await streamDiscoverPagesIncremental(
+                                discoverParams,
+                                merged,
+                                maxPages,
+                                maxResults,
+                                controller,
+                                encoder
+                            )
                             await streamBatches(controller, encoder, { type: "done", count: total })
                             controller.close()
-                            return
                         }
-
-                        params = discoverParams.toString()
-                        await streamBatches(controller, encoder, {
-                            type: "meta",
-                            debug: { ...debug, path, params, mood_filters: moodMeta.applied },
-                        })
-                        const total = await streamDiscoverPagesIncremental(
-                            discoverParams,
-                            merged,
-                            maxPages,
-                            maxResults,
-                            controller,
-                            encoder
-                        )
-                        await streamBatches(controller, encoder, { type: "done", count: total })
-                        controller.close()
                     } catch (err) {
                         console.error("[ai-search] stream error:", err)
                         await streamBatches(controller, encoder, { type: "done", count: 0 })
@@ -1338,7 +1506,63 @@ export async function POST(req: NextRequest) {
         let lastParams = ""
         let fallbackUsed: string | null = null
 
-        if (path === "search") {
+        if (merged.similarTo) {
+            path = "search"
+            const baseParams = new URLSearchParams({ query: merged.similarTo })
+            const baseResults = await fetchTmdbSearchPage(baseParams, 1, merged.mediaType === "any" ? "multi" : merged.mediaType)
+            if (baseResults.length > 0) {
+                const baseMovie = baseResults[0]
+                const bmType = (baseMovie as any).media_type || "movie"
+                const simRes = await fetchWithRetry(`${TMDB_BASE}/${bmType}/${baseMovie.id}/recommendations?api_key=${process.env.TMDB_API_KEY?.replace(/\\n/g, '')?.trim()}&page=1`)
+                if (simRes.ok) {
+                    const simData = (await simRes.json()) as { results: (TmdbItem & { media_type?: string })[] }
+                    let recs = simData.results ?? []
+                    recs.forEach(r => { if (!r.media_type) r.media_type = bmType })
+                    movies = recs.filter(t => t.poster_path).map(tmdbToMovie)
+                    lastParams = `similarTo:${baseMovie.id}`
+
+                    // Natively filter the recommendations based on user signals
+                    if (merged.year) movies = filterByYear(movies, merged.year)
+                    if (merged.language) movies = movies.filter(m => true) // language filtering is hard natively as we don't have original_language in Movie type, skip for now or rely on mood
+
+                    const moodApplied = applyMoodToolset(merged, movies)
+                    movies = moodApplied.movies
+
+                    // Fallback to discover if native filtering removed everything
+                    if (movies.length < MIN_RESULTS) {
+                        fallbackUsed = "similar_to_discover"
+                        // we try to keep the flavour by adding the base movie's genres
+                        const newGenres = Array.from(new Set([...(merged.includeGenres || []), ...baseMovie.genre_ids.map(id => GENRE_ID_TO_NAME[id]).filter(Boolean)]))
+                        merged.includeGenres = newGenres.length > 0 ? newGenres : undefined
+                        const discovered = await runDiscover(merged)
+                        lastParams = discovered.params
+                        movies = discovered.movies
+                    }
+                } else {
+                    fallbackUsed = "similar_failed"
+                    if (path === "search") {
+                        const searched = await runSearch(merged)
+                        lastParams = searched.params
+                        movies = searched.movies
+                    } else if (path === "discover") {
+                        const discovered = await runDiscover(merged)
+                        lastParams = discovered.params
+                        movies = discovered.movies
+                    }
+                }
+            } else {
+                fallbackUsed = "similar_not_found"
+                if (path === "search") {
+                    const searched = await runSearch(merged)
+                    lastParams = searched.params
+                    movies = searched.movies
+                } else if (path === "discover") {
+                    const discovered = await runDiscover(merged)
+                    lastParams = discovered.params
+                    movies = discovered.movies
+                }
+            }
+        } else if (path === "search") {
             const searched = await runSearch(merged)
             lastParams = searched.params
             movies = searched.movies
@@ -1355,7 +1579,7 @@ export async function POST(req: NextRequest) {
             movies = discovered.movies
         }
 
-        if (path === "discover" || fallbackUsed === "search_to_discover") {
+        if ((path === "discover" || fallbackUsed === "search_to_discover" || fallbackUsed === "similar_to_discover") && !merged.similarTo) {
             if (merged.year) movies = filterByYear(movies, merged.year)
             if (movies.length < MIN_RESULTS) {
                 const relaxed = await runDiscover(merged, { relaxVoteCount: true })

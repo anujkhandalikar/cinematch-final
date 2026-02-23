@@ -1,6 +1,6 @@
 import { createClient } from "./supabase/client"
 
-export type Mood = "imdb_top" | "light_and_fun" | "bollywood" | "oscar" | "srk" | "latest" | "gritty_thrillers" | "quick_watches" | "reality_and_drama" | "whats_viral"
+export type Mood = "imdb_top" | "light_and_fun" | "bollywood" | "oscar" | "srk" | "latest" | "gritty_thrillers" | "quick_watches" | "reality_and_drama" | "whats_viral" | "anuj_picks"
 
 export interface Movie {
     id: string
