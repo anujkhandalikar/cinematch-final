@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
 import { SwipeDeck } from "@/components/SwipeDeck"
@@ -17,7 +17,7 @@ const shuffle = <T,>(array: T[]): T[] => {
 
 const AI_LOADING_STEPS = ["Thinking...", "Scanning movies...", "Ranking picks..."]
 
-export default function SoloPage() {
+function SoloPageInner() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const guidePreview = searchParams.get("guide") === "preview"
@@ -371,5 +371,13 @@ export default function SoloPage() {
             {/* Swipe guide — first-time only, or always when ?guide=preview */}
             <SwipeGuide forceShow={guidePreview} />
         </div>
+    )
+}
+
+export default function SoloPage() {
+    return (
+        <Suspense>
+            <SoloPageInner />
+        </Suspense>
     )
 }
