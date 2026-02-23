@@ -145,6 +145,22 @@ function hashSeed(seed: string): number {
 }
 
 /**
+ * Round-robin interleave of multiple arrays.
+ * [A, B, C], [D, E] → [A, D, B, E, C]
+ * Ensures equal representation when pools have different sizes.
+ */
+export function interleaveArrays<T>(arrays: T[][]): T[] {
+    const result: T[] = []
+    const maxLen = Math.max(...arrays.map((a) => a.length))
+    for (let i = 0; i < maxLen; i++) {
+        for (const arr of arrays) {
+            if (i < arr.length) result.push(arr[i])
+        }
+    }
+    return result
+}
+
+/**
  * Deterministic Fisher-Yates shuffle using a string seed.
  * Given the same array contents and the same seed, the output order
  * is always identical across all clients.

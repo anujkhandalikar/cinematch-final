@@ -14,11 +14,12 @@ interface MovieCardProps {
     index: number
     disabled?: boolean
     selectedOtt?: string[]
+    synopsisOpen?: boolean
+    onSynopsisChange?: (open: boolean) => void
 }
 
-export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: MovieCardProps) {
+export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt, synopsisOpen = false, onSynopsisChange }: MovieCardProps) {
     const [exitX, setExitX] = useState<number | null>(null)
-    const [synopsisOpen, setSynopsisOpen] = useState(false)
     const [isDragging, setIsDragging] = useState(false)
     const x = useMotionValue(0)
     const rotate = useTransform(x, [-200, 200], [-25, 25])
@@ -42,7 +43,7 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
         e.stopPropagation()
         e.preventDefault()
         trackSynopsisOpen(movie.id, movie.title)
-        setSynopsisOpen(true)
+        onSynopsisChange?.(true)
     }
 
     // Only the top card (index 0) is interactive
@@ -187,7 +188,7 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt }: Movi
                 <SynopsisOverlay
                     movie={movie}
                     isOpen={synopsisOpen}
-                    onClose={() => { trackSynopsisClose(movie.id); setSynopsisOpen(false); }}
+                    onClose={() => { trackSynopsisClose(movie.id); onSynopsisChange?.(false); }}
                 />
             )}
         </>
