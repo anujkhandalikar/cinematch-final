@@ -68,7 +68,7 @@ const ANUJ_PICKS: Array<{ title: string; year: number; type: "movie" | "tv" }> =
   { title: "Tumbbad", year: 2018, type: "movie" },
   { title: "Dark", year: 2017, type: "tv" },
   { title: "An Insignificant Man", year: 2016, type: "movie" },
-  { title: "Ludo", year: 2020, type: "movie" },
+  { title: "Ludo", year: 2020, type: "movie" }, // Hindi, TMDB 658412 — dir. Anurag Basu
   { title: "Drive", year: 2011, type: "movie" },
   { title: "Neerja", year: 2016, type: "movie" },
   { title: "House of Secrets: The Burari Deaths", year: 2021, type: "tv" },
