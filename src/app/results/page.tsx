@@ -232,7 +232,6 @@ export default function ResultsPage() {
                                         <motion.div
                                             key={movie.id}
                                             data-id={movie.id}
-                                            layout
                                             onClick={(e) => {
                                                 if (isSelected) {
                                                     if (synopsisOpenId === movie.id) setSynopsisOpenId(null);
@@ -245,7 +244,7 @@ export default function ResultsPage() {
                                                     }
                                                 }
                                             }}
-                                            className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center"
+                                            className={`relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center transition-[filter] duration-150 ease-out ${isSelected ? "blur-none" : "blur-[6px]"}`}
                                             initial={!hasWiggled ? { x: 50, opacity: 0 } : false}
                                             animate={{
                                                 x: 0,
@@ -256,18 +255,16 @@ export default function ResultsPage() {
                                             whileHover={!isSelected ? { opacity: 0.7 } : {}}
                                             transition={{
                                                 x: { type: "spring", stiffness: 300, damping: 25, delay: 0.1 },
-                                                default: { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
+                                                default: { duration: 0.18, ease: "easeOut" }
                                             }}
-                                            style={{
-                                                filter: isSelected ? "blur(0px)" : "blur(8px)",
-                                            }}
+                                            style={{ willChange: "transform, opacity" }}
                                         >
                                             {/* Glow border for selected */}
                                             {isSelected && (
                                                 <motion.div
                                                     layoutId="tile-glow"
                                                     className="absolute inset-0 rounded-2xl border border-zinc-600/50 shadow-[0_0_30px_-5px_rgba(220,38,38,0.3)] z-30 pointer-events-none"
-                                                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                                                    transition={{ duration: 0.18, ease: "easeOut" }}
                                                 />
                                             )}
 
