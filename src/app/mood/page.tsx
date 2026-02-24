@@ -323,7 +323,7 @@ export default function MoodPage() {
     )
 
     return (
-        <div className="flex min-h-screen items-start justify-center pt-8 px-4 pb-32 md:pb-8 bg-black text-white dot-pattern relative">
+        <div className="flex min-h-screen items-start justify-center pt-8 px-4 pb-32 bg-black text-white dot-pattern relative">
             <div className="fixed inset-0 bg-gradient-to-b from-transparent via-black/80 to-black pointer-events-none z-0" />
 
             <motion.div
@@ -477,22 +477,6 @@ export default function MoodPage() {
                                         </div>
                                     )}
 
-                                    {/* Desktop OTT Filter — only for mood pill path */}
-                                    <div className="hidden md:block">
-                                        <AnimatePresence>
-                                            {selectedMood && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: "auto" }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                    className="overflow-hidden"
-                                                >
-                                                    {renderOttFilterContent(false)}
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -500,8 +484,8 @@ export default function MoodPage() {
                 </div>
             </motion.div>
 
-            {/* Mobile Sticky Bottom Bar — only for mood pill path; AI mode shows OTT inline */}
-            <div className="md:hidden">
+            {/* Sticky Bottom Bar — only for mood pill path; AI mode shows OTT inline */}
+            <div>
                 <AnimatePresence>
                     {selectedMood && (
                         <motion.div
@@ -509,7 +493,7 @@ export default function MoodPage() {
                             animate={{ y: 0 }}
                             exit={{ y: "100%" }}
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed inset-x-0 bottom-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-800/60 p-4 pb-8 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.5)]"
+                            className="fixed bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-5xl z-50 bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-800/60 p-4 pb-8 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.5)]"
                         >
                             {renderOttFilterContent(true)}
                         </motion.div>

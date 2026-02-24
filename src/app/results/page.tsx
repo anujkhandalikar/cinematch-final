@@ -23,6 +23,56 @@ export default function ResultsPage() {
 
     const carouselRef = useRef<HTMLDivElement>(null)
 
+    // Keyboard controls: ← → navigate movies, Enter = Watch Now, Space = toggle synopsis, Esc = close synopsis
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (likes.length === 0) return
+            const tag = (e.target as Element).tagName
+            if (tag === "INPUT" || tag === "TEXTAREA") return
+
+            const currentIndex = likes.findIndex((m) => m.id === selectedId)
+
+            if (e.key === "ArrowRight") {
+                e.preventDefault()
+                const nextIndex = Math.min(currentIndex + 1, likes.length - 1)
+                if (nextIndex !== currentIndex) {
+                    const next = likes[nextIndex]
+                    setSynopsisOpenId(null)
+                    setSelectedId(next.id)
+                    document.querySelector(`[data-id="${next.id}"]`)
+                        ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+                }
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault()
+                const prevIndex = Math.max(currentIndex - 1, 0)
+                if (prevIndex !== currentIndex) {
+                    const prev = likes[prevIndex]
+                    setSynopsisOpenId(null)
+                    setSelectedId(prev.id)
+                    document.querySelector(`[data-id="${prev.id}"]`)
+                        ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" })
+                }
+            } else if (e.key === "Enter") {
+                e.preventDefault()
+                if (selectedId) {
+                    const movie = likes.find((m) => m.id === selectedId)
+                    if (movie) {
+                        const query = encodeURIComponent(`${movie.title} movie ${movie.year} watch`)
+                        window.open(`https://www.google.com/search?q=${query}`, "_blank")
+                    }
+                }
+            } else if (e.key === " ") {
+                e.preventDefault()
+                if (selectedId) setSynopsisOpenId((prev) => (prev === selectedId ? null : selectedId))
+            } else if (e.key === "Escape") {
+                setSynopsisOpenId(null)
+            }
+        }
+
+        window.addEventListener("keydown", onKeyDown)
+        return () => window.removeEventListener("keydown", onKeyDown)
+    }, [likes, selectedId, synopsisOpenId])
+
     useEffect(() => {
         if (!carouselRef.current || likes.length === 0) return;
 
@@ -344,17 +394,16 @@ export default function ResultsPage() {
                         <Play className="w-4 h-4 fill-white text-white flex-shrink-0" />
                         Watch Now
                     </Button>
-                    <p className="text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-600">
-                        Built with <span className="text-red-600">♥</span> by{" "}
+                    <p className="text-center text-sm tracking-wide text-zinc-400">
+                        Built with ❤️ by{" "}
                         <a
                             href="https://anujk.in"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-zinc-400 hover:text-white transition-colors"
+                            className="text-zinc-300 underline underline-offset-2 hover:text-white transition-colors"
                         >
                             Anuj
                         </a>
-                        .
                     </p>
                 </div>
             </div>
