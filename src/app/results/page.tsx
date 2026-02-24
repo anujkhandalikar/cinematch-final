@@ -77,62 +77,40 @@ export default function ResultsPage() {
         const carousel = carouselRef.current;
         if (!carousel || likes.length === 0) return;
 
+        let rafId: number;
+        let lastId: string | null = null;
+
         const detectCenteredCard = () => {
-            const containerCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+            const center = carousel.scrollLeft + carousel.clientWidth / 2;
             let closestId: string | null = null;
             let closestDist = Infinity;
 
             Array.from(carousel.children).forEach(child => {
                 const el = child as HTMLElement;
-                const cardCenter = el.offsetLeft + el.offsetWidth / 2;
-                const dist = Math.abs(containerCenter - cardCenter);
+                const dist = Math.abs((el.offsetLeft + el.offsetWidth / 2) - center);
                 if (dist < closestDist) {
                     closestDist = dist;
                     closestId = el.getAttribute('data-id');
                 }
             });
 
-            if (closestId) {
+            if (closestId && closestId !== lastId) {
+                lastId = closestId;
                 setSelectedId(closestId);
                 setSynopsisOpenId(null);
             }
         };
 
-        let fallbackTimer: ReturnType<typeof setTimeout>;
-        let scrollEndFired = false;
-
-        const onScrollEnd = () => {
-            scrollEndFired = true;
-            clearTimeout(fallbackTimer);
-            detectCenteredCard();
+        const onScroll = () => {
+            cancelAnimationFrame(rafId);
+            rafId = requestAnimationFrame(detectCenteredCard);
         };
 
-        const onTouchEnd = () => {
-            scrollEndFired = false;
-            clearTimeout(fallbackTimer);
-            let lastPos = carousel.scrollLeft;
-            let ticks = 0;
-            const poll = () => {
-                if (scrollEndFired) return;
-                const cur = carousel.scrollLeft;
-                if (cur === lastPos || ticks > 25) {
-                    detectCenteredCard();
-                } else {
-                    lastPos = cur;
-                    ticks++;
-                    fallbackTimer = setTimeout(poll, 32);
-                }
-            };
-            fallbackTimer = setTimeout(poll, 32);
-        };
-
-        carousel.addEventListener('scrollend', onScrollEnd, { passive: true });
-        carousel.addEventListener('touchend', onTouchEnd, { passive: true });
+        carousel.addEventListener('scroll', onScroll, { passive: true });
 
         return () => {
-            carousel.removeEventListener('scrollend', onScrollEnd);
-            carousel.removeEventListener('touchend', onTouchEnd);
-            clearTimeout(fallbackTimer);
+            carousel.removeEventListener('scroll', onScroll);
+            cancelAnimationFrame(rafId);
         };
     }, [likes]);
 
@@ -266,7 +244,7 @@ export default function ResultsPage() {
                                                     }
                                                 }
                                             }}
-                                            className={`relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center transition-[filter] duration-100 ease-out ${isSelected ? "blur-none" : "blur-[6px]"}`}
+                                            className={`relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center transition-[filter] duration-75 ease-out ${isSelected ? "blur-none" : "blur-[6px]"}`}
                                             initial={!hasWiggled ? { x: 50, opacity: 0 } : false}
                                             animate={{
                                                 x: 0,
@@ -277,18 +255,16 @@ export default function ResultsPage() {
                                             whileHover={!isSelected ? { opacity: 0.7 } : {}}
                                             transition={{
                                                 x: { type: "spring", stiffness: 300, damping: 25, delay: 0.1 },
-                                                default: { duration: 0.12, ease: "easeOut" }
+                                                default: { duration: 0.08, ease: "easeOut" }
                                             }}
                                             style={{ willChange: "transform, opacity" }}
                                         >
                                             {/* Glow border for selected */}
-                                            {isSelected && (
-                                                <motion.div
-                                                    layoutId="tile-glow"
-                                                    className="absolute inset-0 rounded-2xl border border-zinc-600/50 shadow-[0_0_30px_-5px_rgba(220,38,38,0.3)] z-30 pointer-events-none"
-                                                    transition={{ duration: 0.12, ease: "easeOut" }}
-                                                />
-                                            )}
+                                            <motion.div
+                                                animate={{ opacity: isSelected ? 1 : 0 }}
+                                                transition={{ duration: 0.08 }}
+                                                className="absolute inset-0 rounded-2xl border border-zinc-600/50 shadow-[0_0_30px_-5px_rgba(220,38,38,0.3)] z-30 pointer-events-none"
+                                            />
 
                                             {/* Poster */}
                                             <Image
