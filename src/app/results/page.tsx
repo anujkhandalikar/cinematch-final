@@ -99,15 +99,31 @@ export default function ResultsPage() {
         };
 
         let fallbackTimer: ReturnType<typeof setTimeout>;
+        let scrollEndFired = false;
 
         const onScrollEnd = () => {
+            scrollEndFired = true;
             clearTimeout(fallbackTimer);
             detectCenteredCard();
         };
 
         const onTouchEnd = () => {
+            scrollEndFired = false;
             clearTimeout(fallbackTimer);
-            fallbackTimer = setTimeout(detectCenteredCard, 100);
+            let lastPos = carousel.scrollLeft;
+            let ticks = 0;
+            const poll = () => {
+                if (scrollEndFired) return;
+                const cur = carousel.scrollLeft;
+                if (cur === lastPos || ticks > 25) {
+                    detectCenteredCard();
+                } else {
+                    lastPos = cur;
+                    ticks++;
+                    fallbackTimer = setTimeout(poll, 32);
+                }
+            };
+            fallbackTimer = setTimeout(poll, 32);
         };
 
         carousel.addEventListener('scrollend', onScrollEnd, { passive: true });
