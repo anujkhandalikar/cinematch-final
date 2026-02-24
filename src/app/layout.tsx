@@ -4,7 +4,7 @@ import "./globals.css";
 import { inter } from "@/lib/fonts";
 import { Toaster } from "@/components/ui/sonner";
 import SiteHeader from "@/components/SiteHeader";
-import { GA_MEASUREMENT_ID, GA_SECONDARY_ID } from "@/lib/analytics";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 
 export const metadata: Metadata = {
   title: "CineMatch",
@@ -39,10 +39,7 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            var measurementId = window.location.hostname.indexOf('vercel.app') !== -1
-              ? '${GA_SECONDARY_ID}'
-              : '${GA_MEASUREMENT_ID}';
-            gtag('config', measurementId, {
+            gtag('config', '${GA_MEASUREMENT_ID}', {
               page_path: window.location.pathname,
             });
           `}

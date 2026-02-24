@@ -1,5 +1,4 @@
-export const GA_MEASUREMENT_ID = "G-739G9BV5YY";
-export const GA_SECONDARY_ID = "G-L2HJGTRJ8R";
+export const GA_MEASUREMENT_ID = "G-L2HJGTRJ8R";
 
 type GTagEvent = {
   action: string;
@@ -31,15 +30,8 @@ export function trackEvent({ action, category, label, value, ...rest }: GTagEven
   });
 }
 
-export function getActiveMeasurementId(): string {
-  if (typeof window === "undefined") return GA_MEASUREMENT_ID;
-  return window.location.hostname.includes("vercel.app")
-    ? GA_SECONDARY_ID
-    : GA_MEASUREMENT_ID;
-}
-
 export function trackPageView(path: string) {
-  gtag("config", getActiveMeasurementId(), { page_path: path });
+  gtag("config", GA_MEASUREMENT_ID, { page_path: path });
 }
 
 // ──────────────────────────────────────────
