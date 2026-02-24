@@ -1,0 +1,905 @@
+{
+  "createdAt": "2026-02-24T11:50:21.514Z",
+  "segments": [
+    {
+      "id": "0",
+      "start": 1.25,
+      "end": 2.11,
+      "text": "Hey folks.",
+      "words": [
+        {
+          "word": "Hey",
+          "start": 1.25,
+          "end": 1.49
+        },
+        {
+          "word": " folks.",
+          "start": 1.49,
+          "end": 1.86
+        }
+      ]
+    },
+    {
+      "id": "1",
+      "start": 2.11,
+      "end": 3.11,
+      "text": "I built something new.",
+      "words": [
+        {
+          "word": "I",
+          "start": 2.11,
+          "end": 2.27
+        },
+        {
+          "word": " built",
+          "start": 2.27,
+          "end": 2.43
+        },
+        {
+          "word": " something",
+          "start": 2.43,
+          "end": 2.59
+        },
+        {
+          "word": " new.",
+          "start": 2.59,
+          "end": 2.72
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "start": 3.43,
+      "end": 4.31,
+      "text": "I built it for myself,",
+      "words": [
+        {
+          "word": "I",
+          "start": 3.43,
+          "end": 3.59
+        },
+        {
+          "word": " built",
+          "start": 3.59,
+          "end": 3.825
+        },
+        {
+          "word": " it for",
+          "start": 3.825,
+          "end": 3.995
+        },
+        {
+          "word": " myself,",
+          "start": 3.995,
+          "end": 4.31
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "start": 4.31,
+      "end": 5.83,
+      "text": "but I think you're gonna like it too.",
+      "words": [
+        {
+          "word": " but",
+          "start": 4.31,
+          "end": 4.465
+        },
+        {
+          "word": " I think",
+          "start": 4.465,
+          "end": 4.79
+        },
+        {
+          "word": " you're",
+          "start": 4.79,
+          "end": 5.03
+        },
+        {
+          "word": " gonna",
+          "start": 5.03,
+          "end": 5.19
+        },
+        {
+          "word": " like",
+          "start": 5.19,
+          "end": 5.35
+        },
+        {
+          "word": " it",
+          "start": 5.35,
+          "end": 5.51
+        },
+        {
+          "word": " too.",
+          "start": 5.51,
+          "end": 5.83
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "start": 5.83,
+      "end": 6.83,
+      "text": "So hear me out.",
+      "words": [
+        {
+          "word": " So",
+          "start": 5.83,
+          "end": 6.07
+        },
+        {
+          "word": " hear",
+          "start": 6.07,
+          "end": 6.305
+        },
+        {
+          "word": " me out.",
+          "start": 6.305,
+          "end": 6.6
+        }
+      ]
+    },
+    {
+      "id": "5",
+      "start": 8.07,
+      "end": 9.25,
+      "text": "All of us love movies, right?",
+      "words": [
+        {
+          "word": "All of",
+          "start": 8.07,
+          "end": 8.32
+        },
+        {
+          "word": " us",
+          "start": 8.32,
+          "end": 8.48
+        },
+        {
+          "word": " love",
+          "start": 8.48,
+          "end": 8.64
+        },
+        {
+          "word": " movies,",
+          "start": 8.64,
+          "end": 9.04
+        },
+        {
+          "word": " right?",
+          "start": 9.04,
+          "end": 9.25
+        }
+      ]
+    },
+    {
+      "id": "6",
+      "start": 10.11,
+      "end": 11.31,
+      "text": "But sometimes it's just",
+      "words": [
+        {
+          "word": "But",
+          "start": 10.11,
+          "end": 10.35
+        },
+        {
+          "word": " sometimes",
+          "start": 10.35,
+          "end": 10.83
+        },
+        {
+          "word": " it's",
+          "start": 10.83,
+          "end": 11.07
+        },
+        {
+          "word": " just",
+          "start": 11.07,
+          "end": 11.31
+        }
+      ]
+    },
+    {
+      "id": "7",
+      "start": 11.31,
+      "end": 12.96,
+      "text": "hard to find one movie to watch.",
+      "words": [
+        {
+          "word": " hard",
+          "start": 11.31,
+          "end": 11.63
+        },
+        {
+          "word": " to",
+          "start": 11.63,
+          "end": 11.79
+        },
+        {
+          "word": " find",
+          "start": 11.79,
+          "end": 12.11
+        },
+        {
+          "word": " one",
+          "start": 12.11,
+          "end": 12.27
+        },
+        {
+          "word": " movie",
+          "start": 12.27,
+          "end": 12.59
+        },
+        {
+          "word": " to",
+          "start": 12.59,
+          "end": 12.75
+        },
+        {
+          "word": " watch.",
+          "start": 12.75,
+          "end": 12.96
+        }
+      ]
+    },
+    {
+      "id": "8",
+      "start": 14.76,
+      "end": 15.805,
+      "text": "There are like so many",
+      "words": [
+        {
+          "word": "There are",
+          "start": 14.76,
+          "end": 15.01
+        },
+        {
+          "word": " like",
+          "start": 15.01,
+          "end": 15.25
+        },
+        {
+          "word": " so",
+          "start": 15.25,
+          "end": 15.49
+        },
+        {
+          "word": " many",
+          "start": 15.49,
+          "end": 15.805
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "start": 15.805,
+      "end": 17.01,
+      "text": "of them and it's like",
+      "words": [
+        {
+          "word": " of them",
+          "start": 15.805,
+          "end": 16.21
+        },
+        {
+          "word": " and",
+          "start": 16.21,
+          "end": 16.45
+        },
+        {
+          "word": " it's",
+          "start": 16.45,
+          "end": 16.77
+        },
+        {
+          "word": " like",
+          "start": 16.77,
+          "end": 17.01
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "start": 17.01,
+      "end": 18.93,
+      "text": "even harder when it's the two of you,",
+      "words": [
+        {
+          "word": " even",
+          "start": 17.01,
+          "end": 17.25
+        },
+        {
+          "word": " harder",
+          "start": 17.25,
+          "end": 17.73
+        },
+        {
+          "word": " when",
+          "start": 17.73,
+          "end": 17.89
+        },
+        {
+          "word": " it's",
+          "start": 17.89,
+          "end": 18.205
+        },
+        {
+          "word": " the two",
+          "start": 18.205,
+          "end": 18.45
+        },
+        {
+          "word": " of",
+          "start": 18.45,
+          "end": 18.61
+        },
+        {
+          "word": " you,",
+          "start": 18.61,
+          "end": 18.93
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "start": 18.93,
+      "end": 19.83,
+      "text": "right?",
+      "words": [
+        {
+          "word": " right?",
+          "start": 18.93,
+          "end": 19.22
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "start": 19.83,
+      "end": 20.83,
+      "text": "What you might like.",
+      "words": [
+        {
+          "word": "What",
+          "start": 19.83,
+          "end": 20.07
+        },
+        {
+          "word": " you",
+          "start": 20.07,
+          "end": 20.23
+        },
+        {
+          "word": " might",
+          "start": 20.23,
+          "end": 20.47
+        },
+        {
+          "word": " like.",
+          "start": 20.47,
+          "end": 20.76
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "start": 21.28,
+      "end": 22.24,
+      "text": "She might not like what",
+      "words": [
+        {
+          "word": "She",
+          "start": 21.28,
+          "end": 21.44
+        },
+        {
+          "word": " might",
+          "start": 21.44,
+          "end": 21.6
+        },
+        {
+          "word": " not",
+          "start": 21.6,
+          "end": 21.76
+        },
+        {
+          "word": " like",
+          "start": 21.76,
+          "end": 22
+        },
+        {
+          "word": " what",
+          "start": 22,
+          "end": 22.24
+        }
+      ]
+    },
+    {
+      "id": "14",
+      "start": 22.24,
+      "end": 23.52,
+      "text": "she might like, you might not like,",
+      "words": [
+        {
+          "word": " she",
+          "start": 22.24,
+          "end": 22.4
+        },
+        {
+          "word": " might",
+          "start": 22.4,
+          "end": 22.56
+        },
+        {
+          "word": " like,",
+          "start": 22.56,
+          "end": 22.8
+        },
+        {
+          "word": " you",
+          "start": 22.8,
+          "end": 22.96
+        },
+        {
+          "word": " might",
+          "start": 22.96,
+          "end": 23.12
+        },
+        {
+          "word": " not",
+          "start": 23.12,
+          "end": 23.28
+        },
+        {
+          "word": " like,",
+          "start": 23.28,
+          "end": 23.52
+        }
+      ]
+    },
+    {
+      "id": "15",
+      "start": 23.52,
+      "end": 24.52,
+      "text": "right?",
+      "words": [
+        {
+          "word": " right?",
+          "start": 23.52,
+          "end": 23.73
+        }
+      ]
+    },
+    {
+      "id": "16",
+      "start": 25.22,
+      "end": 26.22,
+      "text": "What's the solution?",
+      "words": [
+        {
+          "word": "What's",
+          "start": 25.22,
+          "end": 25.455
+        },
+        {
+          "word": " the solution?",
+          "start": 25.455,
+          "end": 25.75
+        }
+      ]
+    },
+    {
+      "id": "17",
+      "start": 27.76,
+      "end": 28.96,
+      "text": "The solution is a very",
+      "words": [
+        {
+          "word": "The",
+          "start": 27.76,
+          "end": 27.92
+        },
+        {
+          "word": " solution",
+          "start": 27.92,
+          "end": 28.4
+        },
+        {
+          "word": " is",
+          "start": 28.4,
+          "end": 28.56
+        },
+        {
+          "word": " a",
+          "start": 28.56,
+          "end": 28.72
+        },
+        {
+          "word": " very",
+          "start": 28.72,
+          "end": 28.96
+        }
+      ]
+    },
+    {
+      "id": "18",
+      "start": 28.96,
+      "end": 31.107,
+      "text": "simple but neat trick",
+      "words": [
+        {
+          "word": " simple",
+          "start": 28.96,
+          "end": 29.36
+        },
+        {
+          "word": " but",
+          "start": 29.36,
+          "end": 29.76
+        },
+        {
+          "word": " neat",
+          "start": 29.76,
+          "end": 30.48
+        },
+        {
+          "word": " trick",
+          "start": 30.48,
+          "end": 31.107
+        }
+      ]
+    },
+    {
+      "id": "19",
+      "start": 31.107,
+      "end": 33.89,
+      "text": "isWhere I surface you.",
+      "words": [
+        {
+          "word": " isWhere",
+          "start": 31.107,
+          "end": 32.8
+        },
+        {
+          "word": " I",
+          "start": 32.8,
+          "end": 33.04
+        },
+        {
+          "word": " surface",
+          "start": 33.04,
+          "end": 33.6
+        },
+        {
+          "word": " you.",
+          "start": 33.6,
+          "end": 33.89
+        }
+      ]
+    },
+    {
+      "id": "20",
+      "start": 34.66,
+      "end": 35.67,
+      "text": "Tender like interface.",
+      "words": [
+        {
+          "word": "Tender",
+          "start": 34.66,
+          "end": 34.98
+        },
+        {
+          "word": " like",
+          "start": 34.98,
+          "end": 35.3
+        },
+        {
+          "word": " interface.",
+          "start": 35.3,
+          "end": 35.67
+        }
+      ]
+    },
+    {
+      "id": "21",
+      "start": 36.56,
+      "end": 37.56,
+      "text": "What for movies.",
+      "words": [
+        {
+          "word": "What",
+          "start": 36.56,
+          "end": 36.72
+        },
+        {
+          "word": " for",
+          "start": 36.72,
+          "end": 36.96
+        },
+        {
+          "word": " movies.",
+          "start": 36.96,
+          "end": 37.25
+        }
+      ]
+    },
+    {
+      "id": "22",
+      "start": 38.93,
+      "end": 40.53,
+      "text": "So you swipe left or",
+      "words": [
+        {
+          "word": "So",
+          "start": 38.93,
+          "end": 39.09
+        },
+        {
+          "word": " you",
+          "start": 39.09,
+          "end": 39.33
+        },
+        {
+          "word": " swipe",
+          "start": 39.33,
+          "end": 39.89
+        },
+        {
+          "word": " left",
+          "start": 39.89,
+          "end": 40.29
+        },
+        {
+          "word": " or",
+          "start": 40.29,
+          "end": 40.53
+        }
+      ]
+    },
+    {
+      "id": "23",
+      "start": 40.53,
+      "end": 41.78,
+      "text": "right on the movies.",
+      "words": [
+        {
+          "word": " right",
+          "start": 40.53,
+          "end": 40.93
+        },
+        {
+          "word": " on",
+          "start": 40.93,
+          "end": 41.09
+        },
+        {
+          "word": " the",
+          "start": 41.09,
+          "end": 41.25
+        },
+        {
+          "word": " movies.",
+          "start": 41.25,
+          "end": 41.78
+        }
+      ]
+    },
+    {
+      "id": "24",
+      "start": 42.98,
+      "end": 44.07,
+      "text": "Both of you individually.",
+      "words": [
+        {
+          "word": "Both",
+          "start": 42.98,
+          "end": 43.14
+        },
+        {
+          "word": " of",
+          "start": 43.14,
+          "end": 43.3
+        },
+        {
+          "word": " you",
+          "start": 43.3,
+          "end": 43.46
+        },
+        {
+          "word": " individually.",
+          "start": 43.46,
+          "end": 44.07
+        }
+      ]
+    },
+    {
+      "id": "25",
+      "start": 44.88,
+      "end": 46.93,
+      "text": "And the movies that both of you like.",
+      "words": [
+        {
+          "word": "And",
+          "start": 44.88,
+          "end": 45.12
+        },
+        {
+          "word": " the",
+          "start": 45.12,
+          "end": 45.28
+        },
+        {
+          "word": " movies",
+          "start": 45.28,
+          "end": 45.84
+        },
+        {
+          "word": " that",
+          "start": 45.84,
+          "end": 46.16
+        },
+        {
+          "word": " both",
+          "start": 46.16,
+          "end": 46.395
+        },
+        {
+          "word": " of you",
+          "start": 46.395,
+          "end": 46.64
+        },
+        {
+          "word": " like.",
+          "start": 46.64,
+          "end": 46.93
+        }
+      ]
+    },
+    {
+      "id": "26",
+      "start": 47.41,
+      "end": 48.41,
+      "text": "End up being a short list.",
+      "words": [
+        {
+          "word": "End",
+          "start": 47.41,
+          "end": 47.565
+        },
+        {
+          "word": " up being",
+          "start": 47.565,
+          "end": 47.805
+        },
+        {
+          "word": " a short",
+          "start": 47.805,
+          "end": 48.13
+        },
+        {
+          "word": " list.",
+          "start": 48.13,
+          "end": 48.34
+        }
+      ]
+    },
+    {
+      "id": "27",
+      "start": 50.51,
+      "end": 53.8,
+      "text": "So guys Pick a movie, not a fight.",
+      "words": [
+        {
+          "word": "So",
+          "start": 50.51,
+          "end": 50.67
+        },
+        {
+          "word": " guys",
+          "start": 50.67,
+          "end": 50.8
+        },
+        {
+          "word": "Pick",
+          "start": 52.07,
+          "end": 52.47
+        },
+        {
+          "word": " a",
+          "start": 52.47,
+          "end": 52.63
+        },
+        {
+          "word": " movie,",
+          "start": 52.63,
+          "end": 53.11
+        },
+        {
+          "word": " not",
+          "start": 53.11,
+          "end": 53.345
+        },
+        {
+          "word": " a fight.",
+          "start": 53.345,
+          "end": 53.8
+        }
+      ]
+    },
+    {
+      "id": "28",
+      "start": 55.83,
+      "end": 57.08,
+      "text": "Do let me know what you think of it.",
+      "words": [
+        {
+          "word": "Do",
+          "start": 55.83,
+          "end": 56.065
+        },
+        {
+          "word": " let me",
+          "start": 56.065,
+          "end": 56.31
+        },
+        {
+          "word": " know",
+          "start": 56.31,
+          "end": 56.47
+        },
+        {
+          "word": " what",
+          "start": 56.47,
+          "end": 56.625
+        },
+        {
+          "word": " you think",
+          "start": 56.625,
+          "end": 56.795
+        },
+        {
+          "word": " of",
+          "start": 56.795,
+          "end": 56.95
+        },
+        {
+          "word": " it.",
+          "start": 56.95,
+          "end": 57.08
+        }
+      ]
+    },
+    {
+      "id": "29",
+      "start": 57.94,
+      "end": 58.94,
+      "text": "Try it out in the link.",
+      "words": [
+        {
+          "word": "Try",
+          "start": 57.94,
+          "end": 58.095
+        },
+        {
+          "word": " it out",
+          "start": 58.095,
+          "end": 58.335
+        },
+        {
+          "word": " in the",
+          "start": 58.335,
+          "end": 58.505
+        },
+        {
+          "word": " link.",
+          "start": 58.505,
+          "end": 58.71
+        }
+      ]
+    }
+  ]
+}

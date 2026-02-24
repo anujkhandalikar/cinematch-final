@@ -4,11 +4,15 @@ import "./globals.css";
 import { inter } from "@/lib/fonts";
 import { Toaster } from "@/components/ui/sonner";
 import SiteHeader from "@/components/SiteHeader";
-import { GA_MEASUREMENT_ID } from "@/lib/analytics";
+import { GA_MEASUREMENT_ID, GA_SECONDARY_ID } from "@/lib/analytics";
 
 export const metadata: Metadata = {
   title: "CineMatch",
   description: "Find a movie to watch in 3 minutes.",
+  icons: {
+    icon: "/cinematch_logo.png",
+    apple: "/cinematch_logo.png",
+  },
 };
 
 export const viewport = {
@@ -36,6 +40,9 @@ export default function RootLayout({
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', '${GA_MEASUREMENT_ID}', {
+              page_path: window.location.pathname,
+            });
+            gtag('config', '${GA_SECONDARY_ID}', {
               page_path: window.location.pathname,
             });
           `}

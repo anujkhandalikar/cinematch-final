@@ -1,0 +1,119 @@
+1
+00:00:01,250 --> 00:00:02,109
+Hey folks.
+
+2
+00:00:02,109 --> 00:00:03,109
+I built something new.
+
+3
+00:00:03,430 --> 00:00:04,309
+I built it for myself,
+
+4
+00:00:04,309 --> 00:00:05,830
+but I think you're gonna like it too.
+
+5
+00:00:05,830 --> 00:00:06,830
+So hear me out.
+
+6
+00:00:08,070 --> 00:00:09,250
+All of us love movies, right?
+
+7
+00:00:10,109 --> 00:00:11,310
+But sometimes it's just
+
+8
+00:00:11,310 --> 00:00:12,960
+hard to find one movie to watch.
+
+9
+00:00:14,759 --> 00:00:15,804
+There are like so many
+
+10
+00:00:15,804 --> 00:00:17,010
+of them and it's like
+
+11
+00:00:17,010 --> 00:00:18,929
+even harder when it's the two of you,
+
+12
+00:00:18,929 --> 00:00:19,829
+right?
+
+13
+00:00:19,829 --> 00:00:20,829
+What you might like.
+
+14
+00:00:21,280 --> 00:00:22,239
+She might not like what
+
+15
+00:00:22,239 --> 00:00:23,519
+she might like, you might not like,
+
+16
+00:00:23,519 --> 00:00:24,519
+right?
+
+17
+00:00:25,219 --> 00:00:26,219
+What's the solution?
+
+18
+00:00:27,760 --> 00:00:28,960
+The solution is a very
+
+19
+00:00:28,960 --> 00:00:31,106
+simple but neat trick
+
+20
+00:00:31,106 --> 00:00:33,890
+isWhere I surface you.
+
+21
+00:00:34,659 --> 00:00:35,670
+Tender like interface.
+
+22
+00:00:36,560 --> 00:00:37,560
+What for movies.
+
+23
+00:00:38,929 --> 00:00:40,530
+So you swipe left or
+
+24
+00:00:40,530 --> 00:00:41,780
+right on the movies.
+
+25
+00:00:42,979 --> 00:00:44,070
+Both of you individually.
+
+26
+00:00:44,880 --> 00:00:46,929
+And the movies that both of you like.
+
+27
+00:00:47,409 --> 00:00:48,409
+End up being a short list.
+
+28
+00:00:50,509 --> 00:00:53,799
+So guys Pick a movie, not a fight.
+
+29
+00:00:55,829 --> 00:00:57,079
+Do let me know what you think of it.
+
+30
+00:00:57,939 --> 00:00:58,939
+Try it out in the link.

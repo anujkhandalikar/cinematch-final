@@ -1,4 +1,5 @@
 export const GA_MEASUREMENT_ID = "G-L2HJGTRJ8R";
+export const GA_SECONDARY_ID = "G-739G9BV5YY";
 
 type GTagEvent = {
   action: string;
@@ -32,6 +33,7 @@ export function trackEvent({ action, category, label, value, ...rest }: GTagEven
 
 export function trackPageView(path: string) {
   gtag("config", GA_MEASUREMENT_ID, { page_path: path });
+  gtag("config", GA_SECONDARY_ID, { page_path: path });
 }
 
 // ──────────────────────────────────────────
