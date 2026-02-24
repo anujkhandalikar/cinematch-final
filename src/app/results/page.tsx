@@ -78,16 +78,21 @@ export default function ResultsPage() {
         if (!carousel || likes.length === 0) return;
 
         let rafId: number;
+        let debounceTimer: ReturnType<typeof setTimeout>;
         let lastId: string | null = null;
 
+        // Use getBoundingClientRect so positions are always in viewport space —
+        // no dependency on offsetParent or CSS positioning of the carousel.
         const detectCenteredCard = () => {
-            const center = carousel.scrollLeft + carousel.clientWidth / 2;
+            const carouselRect = carousel.getBoundingClientRect();
+            const containerCx = carouselRect.left + carouselRect.width / 2;
             let closestId: string | null = null;
             let closestDist = Infinity;
 
             Array.from(carousel.children).forEach(child => {
                 const el = child as HTMLElement;
-                const dist = Math.abs((el.offsetLeft + el.offsetWidth / 2) - center);
+                const rect = el.getBoundingClientRect();
+                const dist = Math.abs((rect.left + rect.width / 2) - containerCx);
                 if (dist < closestDist) {
                     closestDist = dist;
                     closestId = el.getAttribute('data-id');
@@ -102,17 +107,33 @@ export default function ResultsPage() {
         };
 
         const onScroll = () => {
+            // Real-time update during the swipe
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(detectCenteredCard);
+            // 250ms debounce as universal fallback: fires after scroll events stop,
+            // which covers snap completion even when no scrollend event fires.
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(detectCenteredCard, 250);
+        };
+
+        // scrollend is the most reliable signal on modern browsers; cancel the debounce
+        // and detect immediately when it fires.
+        const onScrollEnd = () => {
+            clearTimeout(debounceTimer);
+            cancelAnimationFrame(rafId);
+            detectCenteredCard();
         };
 
         carousel.addEventListener('scroll', onScroll, { passive: true });
+        carousel.addEventListener('scrollend', onScrollEnd, { passive: true });
 
         return () => {
             carousel.removeEventListener('scroll', onScroll);
+            carousel.removeEventListener('scrollend', onScrollEnd);
             cancelAnimationFrame(rafId);
+            clearTimeout(debounceTimer);
         };
-    }, [likes]);
+    }, [likes, isLoading]);
 
     useEffect(() => {
         const run = async () => {
