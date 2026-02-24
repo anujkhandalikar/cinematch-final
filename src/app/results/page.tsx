@@ -19,9 +19,7 @@ export default function ResultsPage() {
     const [hasWiggled, setHasWiggled] = useState(false)
     const [synopsisOpenId, setSynopsisOpenId] = useState<string | null>(null)
 
-    // New Watch For state
     const [watchForData, setWatchForData] = useState<Record<string, string>>({})
-    const [isWatchForLoading, setIsWatchForLoading] = useState(false)
 
     const carouselRef = useRef<HTMLDivElement>(null)
 
@@ -51,64 +49,79 @@ export default function ResultsPage() {
     }, [likes]);
 
     useEffect(() => {
-        const tmdbResults = sessionStorage.getItem("tmdb_solo_results")
-        const duoResults = sessionStorage.getItem("duo_results")
-        const soloResults = sessionStorage.getItem("solo_results")
+        const run = async () => {
+            const tmdbResults = sessionStorage.getItem("tmdb_solo_results")
+            const duoResults = sessionStorage.getItem("duo_results")
+            const soloResults = sessionStorage.getItem("solo_results")
 
-        if (tmdbResults) {
-            // TMDB path — full movie objects stored directly, no DB fetch needed
-            const likedMovies = JSON.parse(tmdbResults) as Movie[]
+            let likedMovies: Movie[] = []
+
+            if (tmdbResults) {
+                likedMovies = JSON.parse(tmdbResults) as Movie[]
+                trackResultsViewed("solo", likedMovies.length)
+                if (likedMovies.length > 0) setSelectedId(likedMovies[0].id)
+            } else {
+                const saved = duoResults || soloResults
+                const mode = duoResults ? "dual" : "solo"
+                if (duoResults) setIsDuo(true)
+
+                if (saved) {
+                    const likedIds = JSON.parse(saved) as string[]
+                    try {
+                        likedMovies = await getMoviesByIds(likedIds)
+                        trackResultsViewed(mode, likedMovies.length)
+                        if (likedMovies.length > 0) setSelectedId(likedMovies[0].id)
+                    } catch {
+                        // fall through with empty array
+                    }
+                } else {
+                    trackResultsViewed(mode, 0)
+                }
+            }
+
             setLikes(likedMovies)
-            trackResultsViewed("solo", likedMovies.length)
-            if (likedMovies.length > 0) setSelectedId(likedMovies[0].id)
+
+            if (likedMovies.length > 0) {
+                const cacheKey = "watch_for_cache"
+                const currentIds = likedMovies.map(m => m.id).sort().join(",")
+                const cached = sessionStorage.getItem(cacheKey)
+
+                if (cached) {
+                    try {
+                        const { ids, data } = JSON.parse(cached)
+                        if (ids === currentIds) {
+                            setWatchForData(data)
+                            setIsLoading(false)
+                            return
+                        }
+                    } catch {
+                        // corrupt cache — ignore and re-fetch
+                    }
+                }
+
+                try {
+                    const res = await fetch('/api/watch-for', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            movies: likedMovies.map(m => ({ id: m.id, title: m.title, overview: m.overview }))
+                        })
+                    })
+                    const json = await res.json()
+                    if (json.watchFor) {
+                        setWatchForData(json.watchFor)
+                        sessionStorage.setItem(cacheKey, JSON.stringify({ ids: currentIds, data: json.watchFor }))
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch watch for data:", err)
+                }
+            }
+
             setIsLoading(false)
-            return
         }
 
-        const saved = duoResults || soloResults
-        const mode = duoResults ? "dual" : "solo"
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        if (duoResults) setIsDuo(true)
-
-        if (saved) {
-            const likedIds = JSON.parse(saved) as string[]
-            getMoviesByIds(likedIds).then((likedMovies) => {
-                setLikes(likedMovies)
-                trackResultsViewed(mode, likedMovies.length)
-                if (likedMovies.length > 0) {
-                    setSelectedId(likedMovies[0].id)
-                }
-                setIsLoading(false)
-            }).catch(() => {
-                setIsLoading(false)
-            })
-        } else {
-            trackResultsViewed(mode, 0)
-            setIsLoading(false)
-        }
-    }, [])
-
-    // New useEffect to fetch Watch For Data
-    useEffect(() => {
-        if (likes.length === 0) return;
-
-        setIsWatchForLoading(true);
-        fetch('/api/watch-for', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                movies: likes.map(m => ({ id: m.id, title: m.title, overview: m.overview }))
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.watchFor) {
-                    setWatchForData(data.watchFor);
-                }
-            })
-            .catch(err => console.error("Failed to fetch watch for data:", err))
-            .finally(() => setIsWatchForLoading(false));
-    }, [likes]);
+        run()
+    }, []);
 
     if (isLoading) {
         return (
@@ -299,7 +312,7 @@ export default function ResultsPage() {
                     <div className="flex justify-center mb-3">
                         <div className="relative h-7 flex items-center justify-center">
                             <AnimatePresence mode="wait">
-                                {selectedId && watchForData[selectedId] ? (
+                                {selectedId && watchForData[selectedId] && (
                                     <motion.div
                                         key={selectedId}
                                         initial={{ opacity: 0, y: 10 }}
@@ -312,17 +325,7 @@ export default function ResultsPage() {
                                             Watch For: <span className="text-red-500">{watchForData[selectedId]}</span>
                                         </span>
                                     </motion.div>
-                                ) : isWatchForLoading && selectedId ? (
-                                    <motion.div
-                                        key="loading"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className="bg-zinc-900 px-5 py-1.5 rounded-full border border-zinc-700"
-                                    >
-                                        <div className="w-24 h-4 rounded bg-zinc-600/50 animate-pulse" />
-                                    </motion.div>
-                                ) : null}
+                                )}
                             </AnimatePresence>
                         </div>
                     </div>

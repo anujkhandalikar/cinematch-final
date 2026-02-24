@@ -88,11 +88,15 @@ export async function getMoviesByIds(ids: string[]): Promise<Movie[]> {
     return (data ?? []) as Movie[]
 }
 
-/**
- * Get distinct OTT providers available for a given mood.
- * Useful for populating filter options.
- */
-export async function getAvailableProviders(mood?: Mood): Promise<string[]> {
+const ALL_MOODS: Mood[] = ["imdb_top", "light_and_fun", "bollywood", "oscar", "srk", "latest", "gritty_thrillers", "quick_watches", "reality_and_drama", "whats_viral", "anuj_picks"]
+
+// "_all" is the key used for the AI-mode (no mood filter) provider list
+type ProviderCacheKey = Mood | "_all"
+type ProviderCache = Record<ProviderCacheKey, string[]>
+
+const OTT_CACHE_KEY = "ott_cache_v1"
+
+async function fetchProvidersDirect(mood?: Mood): Promise<string[]> {
     let query = supabase
         .from("movies")
         .select("ott_providers")
@@ -117,6 +121,53 @@ export async function getAvailableProviders(mood?: Mood): Promise<string[]> {
     }
 
     return Array.from(allProviders).sort()
+}
+
+/**
+ * Load all OTT providers for every mood (plus the unfiltered "_all" list) in parallel.
+ * Results are persisted to localStorage so subsequent calls are instant.
+ * Bump OTT_CACHE_KEY whenever the movie catalogue changes to invalidate stale data.
+ */
+export async function loadAllProviders(): Promise<ProviderCache> {
+    if (typeof window !== "undefined") {
+        try {
+            const cached = localStorage.getItem(OTT_CACHE_KEY)
+            if (cached) {
+                return JSON.parse(cached) as ProviderCache
+            }
+        } catch {
+            // corrupted storage — fall through to fetch
+        }
+    }
+
+    const entries = await Promise.all([
+        fetchProvidersDirect(undefined).then((p): [ProviderCacheKey, string[]] => ["_all", p]),
+        ...ALL_MOODS.map((mood) =>
+            fetchProvidersDirect(mood).then((p): [ProviderCacheKey, string[]] => [mood, p])
+        ),
+    ])
+
+    const cache = Object.fromEntries(entries) as ProviderCache
+
+    if (typeof window !== "undefined") {
+        try {
+            localStorage.setItem(OTT_CACHE_KEY, JSON.stringify(cache))
+        } catch {
+            // storage quota exceeded — cache just won't persist
+        }
+    }
+
+    return cache
+}
+
+/**
+ * Get distinct OTT providers for a given mood (or all providers when no mood is passed).
+ * Reads from the localStorage cache populated by loadAllProviders(); falls back to a
+ * direct fetch if the cache hasn't been warmed yet.
+ */
+export async function getAvailableProviders(mood?: Mood): Promise<string[]> {
+    const cache = await loadAllProviders()
+    return cache[mood ?? "_all"] ?? []
 }
 
 /**

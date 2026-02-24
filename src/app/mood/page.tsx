@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp, Shuffle, ArrowRight, Sparkles, Film } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { getAvailableProviders, type Mood } from "@/lib/movies"
+import { getAvailableProviders, loadAllProviders, type Mood } from "@/lib/movies"
 import { trackMoodSelected, trackMoodPillClick, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack, trackAiSearchSubmitted, trackAiSearchSessionStarted, trackShuffleClicked } from "@/lib/analytics"
 
 const NOISE_TEXTURE = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")"
@@ -110,9 +110,17 @@ export default function MoodPage() {
     const [aiInput, setAiInput] = useState("")
     const [aiQuery, setAiQuery] = useState("")
     const [isDualMode, setIsDualMode] = useState(false)
+    const providerCacheRef = useRef<Record<string, string[]>>({})
 
     useEffect(() => {
         setIsDualMode(sessionStorage.getItem("selected_mode") === "dual")
+    }, [])
+
+    // Warm the provider cache as soon as the page mounts so mood selections are instant
+    useEffect(() => {
+        loadAllProviders().then((cache) => {
+            providerCacheRef.current = cache
+        })
     }, [])
 
     // Initialize with the requested default moods
@@ -135,16 +143,23 @@ export default function MoodPage() {
         }, 200)
     }
 
-    // Fetch OTT providers when a mood or AI query is active
+    // Resolve OTT providers when a mood or AI query is active
     useEffect(() => {
         if (!selectedMood && !aiQuery) return
-        setLoadingProviders(true)
         setSelectedProviders([])
-        // For AI mode pass no mood to get all providers; for mood mode pass the mood
-        getAvailableProviders(selectedMood ?? undefined).then((providers) => {
-            setAvailableProviders(providers)
+        const key = selectedMood ?? "_all"
+        const cached = providerCacheRef.current[key]
+        if (cached) {
+            setAvailableProviders(cached)
             setLoadingProviders(false)
-        })
+        } else {
+            // Cache not warmed yet (first visit, still loading) — fall back to direct fetch
+            setLoadingProviders(true)
+            getAvailableProviders(selectedMood ?? undefined).then((providers) => {
+                setAvailableProviders(providers)
+                setLoadingProviders(false)
+            })
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMood, aiQuery])
 
