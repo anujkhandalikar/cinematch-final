@@ -62,6 +62,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     const statusRef = useRef<string>("waiting")
     const countdownStartedRef = useRef(false)
     const timeLeftRef = useRef(180)
+    const myLikedCountRef = useRef(0)
     const NUDGE_THRESHOLD = 3
 
     const normalizeParticipant = (row: Record<string, unknown>): Participant => ({
@@ -182,9 +183,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
         trackSessionComplete({
             mode: "dual",
-            liked_count: myLikedCount,
-            time_remaining: timeLeft,
-            completion: timeLeft <= 0 ? "timer" : "manual",
+            liked_count: myLikedCountRef.current,
+            time_remaining: timeLeftRef.current,
+            completion: timeLeftRef.current <= 0 ? "timer" : "manual",
         })
 
         await supabase.from("rooms").update({ status: "finished" }).eq("id", code)
@@ -210,11 +211,13 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 .filter(([, users]) => users.size >= 2)
                 .map(([movieId]) => movieId)
 
+            sessionStorage.removeItem("tmdb_solo_results")
+            sessionStorage.removeItem("solo_results")
             sessionStorage.setItem("duo_results", JSON.stringify(mutualIds))
         }
 
         router.push("/results")
-    }, [supabase, code, router, myLikedCount, timeLeft])
+    }, [supabase, code, router])
 
     useEffect(() => {
         const init = async () => {
@@ -431,7 +434,9 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         }
 
         init()
-    }, [code, router, supabase, fetchParticipants, buildDeck, finishAndNavigate, checkNudge])
+    // finishAndNavigate & checkNudge are stable (ref-based) — safe to omit from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [code, router, supabase, fetchParticipants, buildDeck])
 
     const toggleReady = async () => {
         const me = participants.find(p => p.user_id === userId)
@@ -533,6 +538,41 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         }
     }, [allReady, status, supabase, code, isHost, buildDeck])
 
+    // Non-host: poll room status during active play as a guaranteed fallback for nudge.
+    // Broadcasts and Postgres change events can both be silently dropped (flaky connection,
+    // RLS-gated realtime, brief reconnect mid-game). This poll ensures the non-host always
+    // catches a "paused" transition within 2s of the host triggering it.
+    useEffect(() => {
+        if (status !== "active" || isHost) return
+
+        const poll = setInterval(async () => {
+            if (statusRef.current !== "active") {
+                clearInterval(poll)
+                return
+            }
+            const { data: room } = await supabase
+                .from("rooms")
+                .select("status")
+                .eq("id", code)
+                .single()
+
+            if (room?.status === "paused" && statusRef.current === "active") {
+                statusRef.current = "paused"
+                setStatus("paused")
+                setShowNudge(true)
+                fetchMutualMatches()
+            } else if (room?.status === "finished" && statusRef.current === "active") {
+                statusRef.current = "finished"
+                setStatus("finished")
+                finishAndNavigate()
+            }
+        }, 2000)
+
+        return () => clearInterval(poll)
+    // fetchMutualMatches & finishAndNavigate are stable — safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status, isHost, supabase, code])
+
     // Non-host: poll room status as a guaranteed fallback while waiting.
     // The broadcast t3 and Postgres change can both miss in edge cases;
     // this poll catches the transition within 500ms of the host's DB write.
@@ -620,11 +660,14 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             setShowNudge(false)
             finishAndNavigate()
         }
-    }, [timeLeft, status, finishAndNavigate])
+    // finishAndNavigate is stable — safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeLeft, status])
 
     // Keep timeLeftRef in sync so the heartbeat always broadcasts the current value
     // without causing the intervals below to restart every second.
     useEffect(() => { timeLeftRef.current = timeLeft }, [timeLeft])
+    useEffect(() => { myLikedCountRef.current = myLikedCount }, [myLikedCount])
 
     // Nudge poll — runs every 2s while host is active.
     // Deliberately excludes timeLeft from deps so the interval isn't reset each second.
@@ -656,7 +699,18 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
     const handleCopy = () => {
         trackRoomCodeCopied(code)
-        navigator.clipboard.writeText(code)
+        if (navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(code)
+        } else {
+            const ta = document.createElement("textarea")
+            ta.value = code
+            ta.style.position = "fixed"
+            ta.style.opacity = "0"
+            document.body.appendChild(ta)
+            ta.select()
+            document.execCommand("copy")
+            document.body.removeChild(ta)
+        }
         setCopied(true)
         toast.success("Room Code Copied!")
         setTimeout(() => setCopied(false), 2000)

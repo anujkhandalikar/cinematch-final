@@ -13,17 +13,21 @@ const TARGET_PROVIDERS = [
     { name: "Amazon Prime Video", id: 119 },
     { name: "Zee5", id: 232 },
     { name: "SonyLIV", id: 237 },
-    { name: "Disney+", id: 122 },
+    // "Jio Hotstar" — TMDB provider ID 2336 "JioHotstar" (unified platform, region=IN).
+    { name: "Jio Hotstar", id: 2336 },
     { name: "Lionsgate Play", id: 561 },
     { name: "MUBI", id: 11 }
 ]
+
+// TMDB provider IDs that map to "Jio Hotstar"
+const JIO_HOTSTAR_TMDB_IDS = new Set([2336])
 
 const PROVIDER_NAME_MAP: Record<number, string> = {
     8: "Netflix",
     119: "Amazon Prime Video",
     232: "Zee5",
     237: "SonyLIV",
-    122: "Disney+",
+    2336: "Jio Hotstar",
     561: "Lionsgate Play",
     11: "MUBI"
 }
@@ -52,6 +56,21 @@ interface SupabaseMovieRow {
     imdb_rating: number
     mood: Mood
     ott_providers: string[]
+}
+
+/**
+ * Strict check: confirm a title is on JioCinema or Disney+ Hotstar as flatrate in India.
+ * Used when adding new Jio Hotstar movies to avoid false positives from the TMDB filter.
+ */
+async function verifyJioHotstar(tmdbId: number, isTV: boolean): Promise<boolean> {
+    try {
+        const endpoint = isTV ? `/tv/${tmdbId}/watch/providers` : `/movie/${tmdbId}/watch/providers`
+        const data = await tmdbGet<{ results: { [region: string]: { flatrate?: { provider_id: number }[] } } }>(endpoint)
+        const flatrate = data.results?.[WATCH_REGION]?.flatrate ?? []
+        return flatrate.some((p) => JIO_HOTSTAR_TMDB_IDS.has(p.provider_id))
+    } catch {
+        return false
+    }
 }
 
 // Helper: Make a TMDB request
@@ -265,6 +284,14 @@ async function main() {
                                         mapped.ott_providers = regionData.flatrate.map(p => p.provider_name)
                                     }
                                 } catch (e) { }
+                            } else if (provider.name === "Jio Hotstar") {
+                                // Strict verification: confirm flatrate availability in India via individual API call
+                                const isTV = mood === "reality_and_drama"
+                                const confirmed = await verifyJioHotstar(tmdb.id, isTV)
+                                if (!confirmed) {
+                                    await new Promise(r => setTimeout(r, 200))
+                                    continue
+                                }
                             }
                             newMoviesToInsert.push(mapped)
                             currentCount++

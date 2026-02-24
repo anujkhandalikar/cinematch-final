@@ -4,7 +4,7 @@ import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion"
 import Image from "next/image"
 import { Movie } from "@/lib/movies"
 import { useState } from "react"
-import { X, Heart, Info } from "lucide-react"
+import { X, Heart, Info, Youtube } from "lucide-react"
 import { SynopsisOverlay } from "./SynopsisOverlay"
 import { trackSynopsisOpen, trackSynopsisClose } from "@/lib/analytics"
 
@@ -108,83 +108,107 @@ export function MovieCard({ movie, onSwipe, index, disabled, selectedOtt, synops
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
 
                     <div className="absolute bottom-0 w-full p-6 pt-16 text-white z-10">
-                        {/* IMDb Rating + Year */}
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="inline-flex items-center gap-1 bg-[#F5C518] text-black px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none">
-                                IMDb <span className="text-xs font-black">{movie.imdb_rating}</span>
-                            </span>
-                            <span className="text-zinc-400 text-sm font-semibold tracking-wider">
-                                {movie.year}
-                            </span>
-                            {movie.media_type === "tv" && (
-                                <span className="inline-flex items-center gap-1 bg-purple-600/80 text-white px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none uppercase ml-auto">
-                                    TV Series
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Title */}
-                        <h2 className="text-3xl font-black uppercase leading-none tracking-tighter drop-shadow-md mb-2">
-                            {movie.title}
-                        </h2>
-
-                        {/* Genres */}
-                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                            {(Array.isArray(movie.genre) ? movie.genre : [movie.genre]).map((g, i) => (
-                                <span key={i} className="text-[#F5C518] text-[10px] font-bold uppercase tracking-[0.2em]">
-                                    {g}
-                                </span>
-                            ))}
-                        </div>
-
-                        {/* OTT Providers */}
-                        {movie.ott_providers && movie.ott_providers.length > 0 && (
-                            <div className="flex flex-wrap items-center gap-1.5 mb-3">
-                                {movie.ott_providers.map((provider, i) => {
-                                    const isMatch = selectedOtt?.includes(provider)
-                                    return (
-                                        <span
-                                            key={i}
-                                            className={
-                                                isMatch
-                                                    ? "bg-red-600/90 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full border border-red-500/50 shadow-[0_0_8px_-2px_rgba(220,38,38,0.5)]"
-                                                    : "bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10"
-                                            }
-                                        >
-                                            {isMatch ? `✓ ${provider}` : provider}
+                        {movie.youtube_url ? (
+                            /* AI Film card layout */
+                            <>
+                                <div className="mb-2">
+                                    <span className="inline-flex items-center gap-1.5 bg-red-600/90 text-white px-2.5 py-0.5 rounded text-[10px] font-black tracking-wide leading-none uppercase">
+                                        <Youtube className="w-3 h-3" /> AI Film
+                                    </span>
+                                </div>
+                                <h2 className="text-3xl font-black uppercase leading-none tracking-tighter drop-shadow-md mb-2">
+                                    {movie.title}
+                                </h2>
+                                <p className="text-zinc-400 text-sm leading-relaxed">
+                                    by {movie.overview}
+                                </p>
+                            </>
+                        ) : (
+                            /* Standard movie card layout */
+                            <>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="inline-flex items-center gap-1 bg-[#F5C518] text-black px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none">
+                                        IMDb <span className="text-xs font-black">{movie.imdb_rating}</span>
+                                    </span>
+                                    <span className="text-zinc-400 text-sm font-semibold tracking-wider">
+                                        {movie.year}
+                                    </span>
+                                    {movie.media_type === "tv" && (
+                                        <span className="inline-flex items-center gap-1 bg-purple-600/80 text-white px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none uppercase ml-auto">
+                                            TV Series
                                         </span>
-                                    )
-                                })}
-                            </div>
+                                    )}
+                                </div>
+                                <h2 className="text-3xl font-black uppercase leading-none tracking-tighter drop-shadow-md mb-2">
+                                    {movie.title}
+                                </h2>
+                                <div className="flex flex-wrap items-center gap-3 mb-2">
+                                    {(Array.isArray(movie.genre) ? movie.genre : [movie.genre]).map((g, i) => (
+                                        <span key={i} className="text-[#F5C518] text-[10px] font-bold uppercase tracking-[0.2em]">
+                                            {g}
+                                        </span>
+                                    ))}
+                                </div>
+                                {movie.ott_providers && movie.ott_providers.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                                        {movie.ott_providers.map((provider, i) => {
+                                            const isMatch = selectedOtt?.includes(provider)
+                                            return (
+                                                <span
+                                                    key={i}
+                                                    className={
+                                                        isMatch
+                                                            ? "bg-red-600/90 text-white text-[9px] font-bold px-2.5 py-0.5 rounded-full border border-red-500/50 shadow-[0_0_8px_-2px_rgba(220,38,38,0.5)]"
+                                                            : "bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10"
+                                                    }
+                                                >
+                                                    {isMatch ? `✓ ${provider}` : provider}
+                                                </span>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                                <div
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onClick={handleSynopsisTap}
+                                    className="cursor-pointer select-none"
+                                >
+                                    <p className="text-zinc-400 text-sm leading-relaxed line-clamp-2">
+                                        {truncatedOverview}
+                                    </p>
+                                </div>
+                            </>
                         )}
-
-                        {/* Synopsis - tappable */}
-                        <div
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={handleSynopsisTap}
-                            className="cursor-pointer select-none"
-                        >
-                            <p className="text-zinc-400 text-sm leading-relaxed line-clamp-2">
-                                {truncatedOverview}
-                            </p>
-                        </div>
                     </div>
 
-                    {/* Info icon — bottom-right, only on front card when at rest */}
+                    {/* Action button — bottom-right, only on front card when at rest */}
                     {isFront && !isDragging && (
-                        <button
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onClick={handleSynopsisTap}
-                            className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white"
-                        >
-                            <Info className="w-3.5 h-3.5" />
-                        </button>
+                        movie.youtube_url ? (
+                            <a
+                                href={movie.youtube_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-red-600/90 backdrop-blur-sm rounded-full border border-red-500/50 text-white"
+                            >
+                                <Youtube className="w-3.5 h-3.5" />
+                            </a>
+                        ) : (
+                            <button
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={handleSynopsisTap}
+                                className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white"
+                            >
+                                <Info className="w-3.5 h-3.5" />
+                            </button>
+                        )
                     )}
                 </div>
             </motion.div>
 
-            {/* Synopsis Full-Screen Overlay */}
-            {isFront && (
+            {/* Synopsis Full-Screen Overlay — not used for YouTube films */}
+            {isFront && !movie.youtube_url && (
                 <SynopsisOverlay
                     movie={movie}
                     isOpen={synopsisOpen}

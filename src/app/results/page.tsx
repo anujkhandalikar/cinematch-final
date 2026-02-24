@@ -57,8 +57,12 @@ export default function ResultsPage() {
                 if (selectedId) {
                     const movie = likes.find((m) => m.id === selectedId)
                     if (movie) {
-                        const query = encodeURIComponent(`${movie.title} movie ${movie.year} watch`)
-                        window.open(`https://www.google.com/search?q=${query}`, "_blank")
+                        if (movie.youtube_url) {
+                            window.open(movie.youtube_url, "_blank")
+                        } else {
+                            const query = encodeURIComponent(`${movie.title} movie ${movie.year} watch`)
+                            window.open(`https://www.google.com/search?q=${query}`, "_blank")
+                        }
                     }
                 }
             } else if (e.key === " ") {
@@ -298,72 +302,99 @@ export default function ResultsPage() {
                                             {/* Gradient overlay */}
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-                                            {/* Info button — only on focused card, bottom-right */}
+                                            {/* Action button — bottom-right, focused card only */}
                                             {isSelected && (
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSynopsisOpenId(synopsisOpenId === movie.id ? null : movie.id);
-                                                    }}
-                                                    className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white"
-                                                >
-                                                    <Info className="w-3.5 h-3.5" />
-                                                </button>
+                                                movie.youtube_url ? (
+                                                    <a
+                                                        href={movie.youtube_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-red-600/90 backdrop-blur-sm rounded-full border border-red-500/50 text-white"
+                                                    >
+                                                        <Play className="w-3.5 h-3.5 fill-white" />
+                                                    </a>
+                                                ) : (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSynopsisOpenId(synopsisOpenId === movie.id ? null : movie.id);
+                                                        }}
+                                                        className="absolute bottom-4 right-4 z-20 w-7 h-7 flex items-center justify-center bg-white/15 backdrop-blur-sm rounded-full border border-white/20 text-white"
+                                                    >
+                                                        <Info className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )
                                             )}
 
-                                            {/* Synopsis slide-up panel */}
-                                            <AnimatePresence>
-                                                {synopsisOpenId === movie.id && (
-                                                    <motion.div
-                                                        initial={{ y: "100%" }}
-                                                        animate={{ y: 0 }}
-                                                        exit={{ y: "100%" }}
-                                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                                        className="absolute inset-x-0 bottom-0 h-[65%] z-20 bg-black/92 backdrop-blur-md p-4 flex flex-col overflow-hidden"
-                                                    >
-                                                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 mb-2">Synopsis</p>
-                                                        <p className="text-sm text-zinc-300 leading-relaxed overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                                                            {movie.overview || "No synopsis available."}
-                                                        </p>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
+                                            {/* Synopsis slide-up panel — not used for YouTube films */}
+                                            {!movie.youtube_url && (
+                                                <AnimatePresence>
+                                                    {synopsisOpenId === movie.id && (
+                                                        <motion.div
+                                                            initial={{ y: "100%" }}
+                                                            animate={{ y: 0 }}
+                                                            exit={{ y: "100%" }}
+                                                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                                            className="absolute inset-x-0 bottom-0 h-[65%] z-20 bg-black/92 backdrop-blur-md p-4 flex flex-col overflow-hidden"
+                                                        >
+                                                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500 mb-2">Synopsis</p>
+                                                            <p className="text-sm text-zinc-300 leading-relaxed overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                                                                {movie.overview || "No synopsis available."}
+                                                            </p>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            )}
 
                                             {/* Info overlay at bottom */}
                                             <div className="absolute bottom-0 w-full p-5 z-10">
-                                                {/* IMDb + Year */}
-                                                <div className="flex items-center gap-2.5 mb-2">
-                                                    <span className="inline-flex items-center gap-1 bg-[#F5C518] text-black px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none">
-                                                        IMDb <span className="text-xs font-black">{movie.imdb_rating}</span>
-                                                    </span>
-                                                    <span className="text-zinc-400 text-sm font-semibold tracking-wider">
-                                                        {movie.year}
-                                                    </span>
-                                                </div>
-
-                                                {/* Title */}
-                                                <h3 className="text-2xl font-black uppercase leading-none tracking-tighter text-white mb-1.5">
-                                                    {movie.title}
-                                                </h3>
-
-                                                {/* Genres */}
-                                                <div className="flex flex-wrap items-center gap-2.5 mb-2">
-                                                    {(Array.isArray(movie.genre) ? movie.genre : [movie.genre]).map((g, i) => (
-                                                        <span key={i} className="text-[#F5C518] text-[10px] font-bold uppercase tracking-[0.2em]">
-                                                            {g}
-                                                        </span>
-                                                    ))}
-                                                </div>
-
-                                                {/* OTT Providers */}
-                                                {movie.ott_providers && movie.ott_providers.length > 0 && (
-                                                    <div className="flex flex-wrap items-center gap-1.5">
-                                                        {movie.ott_providers.map((provider, i) => (
-                                                            <span key={i} className="bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10">
-                                                                {provider}
+                                                {movie.youtube_url ? (
+                                                    /* AI Film info */
+                                                    <>
+                                                        <div className="mb-2">
+                                                            <span className="inline-flex items-center gap-1 bg-red-600/80 text-white px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none uppercase">
+                                                                AI Film
                                                             </span>
-                                                        ))}
-                                                    </div>
+                                                        </div>
+                                                        <h3 className="text-2xl font-black uppercase leading-none tracking-tighter text-white mb-1.5">
+                                                            {movie.title}
+                                                        </h3>
+                                                        <p className="text-zinc-400 text-[11px] leading-relaxed">
+                                                            by {movie.overview}
+                                                        </p>
+                                                    </>
+                                                ) : (
+                                                    /* Standard movie info */
+                                                    <>
+                                                        <div className="flex items-center gap-2.5 mb-2">
+                                                            <span className="inline-flex items-center gap-1 bg-[#F5C518] text-black px-2 py-0.5 rounded text-[10px] font-black tracking-wide leading-none">
+                                                                IMDb <span className="text-xs font-black">{movie.imdb_rating}</span>
+                                                            </span>
+                                                            <span className="text-zinc-400 text-sm font-semibold tracking-wider">
+                                                                {movie.year}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-2xl font-black uppercase leading-none tracking-tighter text-white mb-1.5">
+                                                            {movie.title}
+                                                        </h3>
+                                                        <div className="flex flex-wrap items-center gap-2.5 mb-2">
+                                                            {(Array.isArray(movie.genre) ? movie.genre : [movie.genre]).map((g, i) => (
+                                                                <span key={i} className="text-[#F5C518] text-[10px] font-bold uppercase tracking-[0.2em]">
+                                                                    {g}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                        {movie.ott_providers && movie.ott_providers.length > 0 && (
+                                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                                {movie.ott_providers.map((provider, i) => (
+                                                                    <span key={i} className="bg-white/10 backdrop-blur-sm text-zinc-300 text-[9px] font-semibold px-2 py-0.5 rounded-full border border-white/10">
+                                                                        {provider}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         </motion.div>
@@ -418,13 +449,17 @@ export default function ResultsPage() {
                         onClick={() => {
                             const selectedMovie = likes.find(m => m.id === selectedId);
                             if (selectedMovie) {
-                                const query = encodeURIComponent(`${selectedMovie.title} movie ${selectedMovie.year} watch`);
-                                window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                                if (selectedMovie.youtube_url) {
+                                    window.open(selectedMovie.youtube_url, '_blank');
+                                } else {
+                                    const query = encodeURIComponent(`${selectedMovie.title} movie ${selectedMovie.year} watch`);
+                                    window.open(`https://www.google.com/search?q=${query}`, '_blank');
+                                }
                             }
                         }}
                     >
                         <Play className="w-4 h-4 fill-white text-white flex-shrink-0" />
-                        Watch Now
+                        {likes.find(m => m.id === selectedId)?.youtube_url ? "Watch on YouTube" : "Watch Now"}
                     </Button>
                     <p className="text-center text-sm tracking-wide text-zinc-400">
                         Built with ❤️ by{" "}

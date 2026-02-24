@@ -24,11 +24,19 @@ const PROVIDER_WHITELIST = new Set([
   "Netflix", "Amazon Prime Video",
   "Zee5", "ZEE5",
   "MUBI", "Lionsgate Play",
+  // Jio Hotstar variants (JioCinema + Disney+ Hotstar merged in 2024)
+  "JioCinema", "Jio Cinema",
+  "Disney+ Hotstar", "Disney Plus", "Hotstar",
 ])
 
 function normalizeProvider(name: string): string {
   const map: Record<string, string> = {
     ZEE5: "Zee5", Zee5: "Zee5",
+    JioCinema: "Jio Hotstar",
+    "Jio Cinema": "Jio Hotstar",
+    "Disney+ Hotstar": "Jio Hotstar",
+    "Disney Plus": "Jio Hotstar",
+    Hotstar: "Jio Hotstar",
   }
   return map[name] ?? name
 }

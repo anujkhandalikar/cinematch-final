@@ -76,10 +76,20 @@ During seeding, each movie is checked for Indian streaming availability (`WATCH_
 | Zee5 | `ZEE5` is normalized to `Zee5` |
 | MUBI | — |
 | Lionsgate Play | — |
+| Jio Hotstar | TMDB provider ID **2336** (`"JioHotstar"`) — the unified post-merger platform available in India. All legacy variant names (`JioCinema`, `Jio Cinema`, `Disney+ Hotstar`, `Disney Plus`, `Hotstar`) are normalized to `"Jio Hotstar"` in the DB. |
 
-> The `topup-movies.ts` script also recognises **SonyLIV** and **Disney+** when filling gaps, so these may appear on entries seeded through that route.
+> The `topup-movies.ts` script also recognises **SonyLIV** when filling gaps, so it may appear on entries seeded through that route.
 
 Only **flatrate** (subscription) providers are stored — rental/purchase entries are ignored.
+
+### Jio Hotstar Enrichment Scripts
+
+Two scripts handle Jio Hotstar specifically:
+
+| Script | Purpose |
+| :--- | :--- |
+| `scripts/enrich-jio-hotstar.ts` | **Run first.** Scans all ~1000 existing DB movies and additively merges `"Jio Hotstar"` into `ott_providers` for any title confirmed on JioCinema or Disney+ Hotstar (flatrate, India) — without touching other provider data. |
+| `scripts/topup-movies.ts` | **Run after enrich.** Now targets `"Jio Hotstar"` (queries both TMDB IDs 220 and 122) and fills gaps to ≥ 20 Jio Hotstar movies per mood. New candidates are **strictly verified** individually via `/watch/providers` before being inserted. |
 
 ---
 

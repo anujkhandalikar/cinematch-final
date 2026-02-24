@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp, Shuffle, ArrowRight, Sparkles, Film } from "lucide-react"
+import { ArrowLeft, Trophy, PartyPopper, Clapperboard, Award, Star, Check, SkipForward, Tv, Flame, Zap, Timer, Users, TrendingUp, Shuffle, ArrowRight, Sparkles, Film, Youtube } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { getAvailableProviders, loadAllProviders, type Mood } from "@/lib/movies"
 import { trackMoodSelected, trackMoodPillClick, trackOttToggled, trackOttSelected, trackOttSkipped, trackNavBack, trackAiSearchSubmitted, trackAiSearchSessionStarted, trackShuffleClicked } from "@/lib/analytics"
@@ -87,7 +87,14 @@ const MOODS: { id: Mood; label: string; description: string; icon: React.ReactNo
         description: "The shows everyone is talking about",
         icon: <TrendingUp className="w-7 h-7" />,
         gradient: "from-emerald-500/60 via-emerald-900/30 to-transparent",
-    }
+    },
+    {
+        id: "ai_films",
+        label: "AI Films",
+        description: "Short films made with AI by friends",
+        icon: <Youtube className="w-7 h-7" />,
+        gradient: "from-red-500/60 via-zinc-900/30 to-transparent",
+    },
 ]
 
 // OTT provider brand colors
@@ -125,7 +132,7 @@ export default function MoodPage() {
 
     // Initialize with the requested default moods
     useEffect(() => {
-        const defaultMoodIds = ["light_and_fun", "latest", "anuj_picks"]
+        const defaultMoodIds = ["light_and_fun", "anuj_picks", "latest"]
         const initialMoods = MOODS.filter(m => defaultMoodIds.includes(m.id))
         setDisplayedMoods(initialMoods)
     }, [])
@@ -146,6 +153,12 @@ export default function MoodPage() {
     // Resolve OTT providers when a mood or AI query is active
     useEffect(() => {
         if (!selectedMood && !aiQuery) return
+        // ai_films are YouTube-only — no OTT providers to load
+        if (selectedMood === "ai_films") {
+            setAvailableProviders([])
+            setLoadingProviders(false)
+            return
+        }
         setSelectedProviders([])
         const key = selectedMood ?? "_all"
         const cached = providerCacheRef.current[key]
@@ -244,6 +257,28 @@ export default function MoodPage() {
             router.push("/solo")
         }
     }
+
+    const renderAiFilmsContent = (isMobile: boolean) => (
+        <div className={`space-y-4 ${isMobile ? "" : "border-t border-zinc-800/60 pt-6"}`}>
+            <div className="flex items-center gap-3">
+                <Youtube className="w-5 h-5 text-red-500" />
+                <div>
+                    <h2 className="text-sm font-black uppercase tracking-wider text-white">
+                        14 AI short films on YouTube
+                    </h2>
+                    <p className="text-[11px] font-bold tracking-widest text-zinc-600 uppercase">
+                        Made by friends — swipe to save your picks
+                    </p>
+                </div>
+            </div>
+            <Button
+                className="w-full h-12 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase tracking-tighter rounded-full transition-all shadow-[0_0_30px_-10px_rgba(220,38,38,0.5)] hover:scale-105"
+                onClick={handleContinue}
+            >
+                Start Watching →
+            </Button>
+        </div>
+    )
 
     const renderOttFilterContent = (isMobile: boolean) => (
         <div className={`space-y-4 ${isMobile ? "" : "border-t border-zinc-800/60 pt-6"}`}>
@@ -495,7 +530,7 @@ export default function MoodPage() {
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             className="fixed bottom-0 left-0 right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-full md:max-w-5xl z-50 bg-zinc-950/80 backdrop-blur-xl border-t border-zinc-800/60 p-4 pb-8 rounded-t-2xl shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.5)]"
                         >
-                            {renderOttFilterContent(true)}
+                            {selectedMood === "ai_films" ? renderAiFilmsContent(true) : renderOttFilterContent(true)}
                         </motion.div>
                     )}
                 </AnimatePresence>

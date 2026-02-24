@@ -39,7 +39,9 @@ export default function DualLobbyPage() {
     const handleCreateRoom = async () => {
         setIsCreating(true)
         const code = generateCode()
-        const seed = crypto.randomUUID()
+        const seed = typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
 
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {

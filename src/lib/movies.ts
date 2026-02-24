@@ -1,6 +1,6 @@
 import { createClient } from "./supabase/client"
 
-export type Mood = "imdb_top" | "light_and_fun" | "bollywood" | "oscar" | "srk" | "latest" | "gritty_thrillers" | "quick_watches" | "reality_and_drama" | "whats_viral" | "anuj_picks"
+export type Mood = "imdb_top" | "light_and_fun" | "bollywood" | "oscar" | "srk" | "latest" | "gritty_thrillers" | "quick_watches" | "reality_and_drama" | "whats_viral" | "anuj_picks" | "ai_films"
 
 export interface Movie {
     id: string
@@ -13,6 +13,7 @@ export interface Movie {
     mood: Mood
     ott_providers: string[]
     media_type?: string
+    youtube_url?: string
 }
 
 const supabase = createClient()
@@ -89,6 +90,7 @@ export async function getMoviesByIds(ids: string[]): Promise<Movie[]> {
 }
 
 const ALL_MOODS: Mood[] = ["imdb_top", "light_and_fun", "bollywood", "oscar", "srk", "latest", "gritty_thrillers", "quick_watches", "reality_and_drama", "whats_viral", "anuj_picks"]
+// ai_films is intentionally excluded — it's served from local data, not Supabase
 
 // "_all" is the key used for the AI-mode (no mood filter) provider list
 type ProviderCacheKey = Mood | "_all"

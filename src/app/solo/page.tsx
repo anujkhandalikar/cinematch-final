@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { getMoviesByMood, type Mood, type Movie } from "@/lib/movies"
+import { AI_FILMS } from "@/lib/ai-films"
 import { SwipeDeck } from "@/components/SwipeDeck"
 import { NudgeOverlay } from "@/components/NudgeOverlay"
 import { SwipeGuide } from "@/components/SwipeGuide"
@@ -172,6 +173,13 @@ function SoloPageInner() {
                     trackAiSearchError(aiSearchQuery)
                     router.push("/mood")
                 })
+        } else if (mood === "ai_films") {
+            // AI films are served locally — no Supabase fetch needed
+            isTmdbSessionRef.current = true
+            const ordered = shuffle(AI_FILMS)
+            setMovies(ordered)
+            setStreamDone(true)
+            trackSessionStart({ mode: "solo", mood: "ai_films", ott_count: 0, movie_count: ordered.length })
         } else if (mood) {
             getMoviesByMood(mood).then((allMovies: Movie[]) => {
                 let ordered: Movie[]
