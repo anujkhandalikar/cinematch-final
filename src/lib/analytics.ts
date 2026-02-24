@@ -31,9 +31,15 @@ export function trackEvent({ action, category, label, value, ...rest }: GTagEven
   });
 }
 
+export function getActiveMeasurementId(): string {
+  if (typeof window === "undefined") return GA_MEASUREMENT_ID;
+  return window.location.hostname.includes("vercel.app")
+    ? GA_SECONDARY_ID
+    : GA_MEASUREMENT_ID;
+}
+
 export function trackPageView(path: string) {
-  gtag("config", GA_MEASUREMENT_ID, { page_path: path });
-  gtag("config", GA_SECONDARY_ID, { page_path: path });
+  gtag("config", getActiveMeasurementId(), { page_path: path });
 }
 
 // ──────────────────────────────────────────

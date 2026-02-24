@@ -39,10 +39,10 @@ export default function RootLayout({
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}', {
-              page_path: window.location.pathname,
-            });
-            gtag('config', '${GA_SECONDARY_ID}', {
+            var measurementId = window.location.hostname.indexOf('vercel.app') !== -1
+              ? '${GA_SECONDARY_ID}'
+              : '${GA_MEASUREMENT_ID}';
+            gtag('config', measurementId, {
               page_path: window.location.pathname,
             });
           `}
