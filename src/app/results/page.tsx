@@ -98,19 +98,25 @@ export default function ResultsPage() {
             }
         };
 
-        let scrollTimer: ReturnType<typeof setTimeout>;
-        const onScroll = () => {
-            clearTimeout(scrollTimer);
-            scrollTimer = setTimeout(detectCenteredCard, 80);
+        let fallbackTimer: ReturnType<typeof setTimeout>;
+
+        const onScrollEnd = () => {
+            clearTimeout(fallbackTimer);
+            detectCenteredCard();
         };
 
-        carousel.addEventListener('scroll', onScroll, { passive: true });
-        carousel.addEventListener('scrollend', detectCenteredCard, { passive: true });
+        const onTouchEnd = () => {
+            clearTimeout(fallbackTimer);
+            fallbackTimer = setTimeout(detectCenteredCard, 100);
+        };
+
+        carousel.addEventListener('scrollend', onScrollEnd, { passive: true });
+        carousel.addEventListener('touchend', onTouchEnd, { passive: true });
 
         return () => {
-            carousel.removeEventListener('scroll', onScroll);
-            carousel.removeEventListener('scrollend', detectCenteredCard);
-            clearTimeout(scrollTimer);
+            carousel.removeEventListener('scrollend', onScrollEnd);
+            carousel.removeEventListener('touchend', onTouchEnd);
+            clearTimeout(fallbackTimer);
         };
     }, [likes]);
 
@@ -244,7 +250,7 @@ export default function ResultsPage() {
                                                     }
                                                 }
                                             }}
-                                            className={`relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center transition-[filter] duration-150 ease-out ${isSelected ? "blur-none" : "blur-[6px]"}`}
+                                            className={`relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center transition-[filter] duration-100 ease-out ${isSelected ? "blur-none" : "blur-[6px]"}`}
                                             initial={!hasWiggled ? { x: 50, opacity: 0 } : false}
                                             animate={{
                                                 x: 0,
@@ -255,7 +261,7 @@ export default function ResultsPage() {
                                             whileHover={!isSelected ? { opacity: 0.7 } : {}}
                                             transition={{
                                                 x: { type: "spring", stiffness: 300, damping: 25, delay: 0.1 },
-                                                default: { duration: 0.18, ease: "easeOut" }
+                                                default: { duration: 0.12, ease: "easeOut" }
                                             }}
                                             style={{ willChange: "transform, opacity" }}
                                         >
@@ -264,7 +270,7 @@ export default function ResultsPage() {
                                                 <motion.div
                                                     layoutId="tile-glow"
                                                     className="absolute inset-0 rounded-2xl border border-zinc-600/50 shadow-[0_0_30px_-5px_rgba(220,38,38,0.3)] z-30 pointer-events-none"
-                                                    transition={{ duration: 0.18, ease: "easeOut" }}
+                                                    transition={{ duration: 0.12, ease: "easeOut" }}
                                                 />
                                             )}
 
