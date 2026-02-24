@@ -78,16 +78,21 @@ export default function ResultsPage() {
         if (!carousel || likes.length === 0) return;
 
         let rafId: number;
+        let debounceTimer: ReturnType<typeof setTimeout>;
         let lastId: string | null = null;
 
+        // Use getBoundingClientRect so positions are always in viewport space —
+        // no dependency on offsetParent or CSS positioning of the carousel.
         const detectCenteredCard = () => {
-            const center = carousel.scrollLeft + carousel.clientWidth / 2;
+            const carouselRect = carousel.getBoundingClientRect();
+            const containerCx = carouselRect.left + carouselRect.width / 2;
             let closestId: string | null = null;
             let closestDist = Infinity;
 
             Array.from(carousel.children).forEach(child => {
                 const el = child as HTMLElement;
-                const dist = Math.abs((el.offsetLeft + el.offsetWidth / 2) - center);
+                const rect = el.getBoundingClientRect();
+                const dist = Math.abs((rect.left + rect.width / 2) - containerCx);
                 if (dist < closestDist) {
                     closestDist = dist;
                     closestId = el.getAttribute('data-id');
@@ -101,54 +106,34 @@ export default function ResultsPage() {
             }
         };
 
-        // Real-time highlight during scroll (covers desktop drag + mouse wheel)
         const onScroll = () => {
+            // Real-time update during the swipe
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(detectCenteredCard);
+            // 250ms debounce as universal fallback: fires after scroll events stop,
+            // which covers snap completion even when no scrollend event fires.
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(detectCenteredCard, 250);
         };
 
-        // After finger lift, poll until scroll position settles (snap complete),
-        // then run a final detection to catch the snapped card reliably on mobile.
-        let fallbackTimer: ReturnType<typeof setTimeout>;
-        let scrollEndFired = false;
-
+        // scrollend is the most reliable signal on modern browsers; cancel the debounce
+        // and detect immediately when it fires.
         const onScrollEnd = () => {
-            scrollEndFired = true;
-            clearTimeout(fallbackTimer);
+            clearTimeout(debounceTimer);
+            cancelAnimationFrame(rafId);
             detectCenteredCard();
-        };
-
-        const onTouchEnd = () => {
-            scrollEndFired = false;
-            clearTimeout(fallbackTimer);
-            let lastPos = carousel.scrollLeft;
-            let ticks = 0;
-            const poll = () => {
-                if (scrollEndFired) return;
-                const cur = carousel.scrollLeft;
-                if (cur === lastPos || ticks > 25) {
-                    detectCenteredCard();
-                } else {
-                    lastPos = cur;
-                    ticks++;
-                    fallbackTimer = setTimeout(poll, 32);
-                }
-            };
-            fallbackTimer = setTimeout(poll, 32);
         };
 
         carousel.addEventListener('scroll', onScroll, { passive: true });
         carousel.addEventListener('scrollend', onScrollEnd, { passive: true });
-        carousel.addEventListener('touchend', onTouchEnd, { passive: true });
 
         return () => {
             carousel.removeEventListener('scroll', onScroll);
             carousel.removeEventListener('scrollend', onScrollEnd);
-            carousel.removeEventListener('touchend', onTouchEnd);
             cancelAnimationFrame(rafId);
-            clearTimeout(fallbackTimer);
+            clearTimeout(debounceTimer);
         };
-    }, [likes]);
+    }, [likes, isLoading]);
 
     useEffect(() => {
         const run = async () => {
