@@ -1,5 +1,5 @@
-export const GA_MEASUREMENT_ID = "G-L2HJGTRJ8R";
-export const GA_SECONDARY_ID = "G-739G9BV5YY";
+export const GA_MEASUREMENT_ID = "G-739G9BV5YY";
+export const GA_SECONDARY_ID = "G-L2HJGTRJ8R";
 
 type GTagEvent = {
   action: string;
