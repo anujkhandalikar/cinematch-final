@@ -101,16 +101,52 @@ export default function ResultsPage() {
             }
         };
 
+        // Real-time highlight during scroll (covers desktop drag + mouse wheel)
         const onScroll = () => {
             cancelAnimationFrame(rafId);
             rafId = requestAnimationFrame(detectCenteredCard);
         };
 
+        // After finger lift, poll until scroll position settles (snap complete),
+        // then run a final detection to catch the snapped card reliably on mobile.
+        let fallbackTimer: ReturnType<typeof setTimeout>;
+        let scrollEndFired = false;
+
+        const onScrollEnd = () => {
+            scrollEndFired = true;
+            clearTimeout(fallbackTimer);
+            detectCenteredCard();
+        };
+
+        const onTouchEnd = () => {
+            scrollEndFired = false;
+            clearTimeout(fallbackTimer);
+            let lastPos = carousel.scrollLeft;
+            let ticks = 0;
+            const poll = () => {
+                if (scrollEndFired) return;
+                const cur = carousel.scrollLeft;
+                if (cur === lastPos || ticks > 25) {
+                    detectCenteredCard();
+                } else {
+                    lastPos = cur;
+                    ticks++;
+                    fallbackTimer = setTimeout(poll, 32);
+                }
+            };
+            fallbackTimer = setTimeout(poll, 32);
+        };
+
         carousel.addEventListener('scroll', onScroll, { passive: true });
+        carousel.addEventListener('scrollend', onScrollEnd, { passive: true });
+        carousel.addEventListener('touchend', onTouchEnd, { passive: true });
 
         return () => {
             carousel.removeEventListener('scroll', onScroll);
+            carousel.removeEventListener('scrollend', onScrollEnd);
+            carousel.removeEventListener('touchend', onTouchEnd);
             cancelAnimationFrame(rafId);
+            clearTimeout(fallbackTimer);
         };
     }, [likes]);
 
