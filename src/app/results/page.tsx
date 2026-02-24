@@ -74,28 +74,44 @@ export default function ResultsPage() {
     }, [likes, selectedId, synopsisOpenId])
 
     useEffect(() => {
-        if (!carouselRef.current || likes.length === 0) return;
+        const carousel = carouselRef.current;
+        if (!carousel || likes.length === 0) return;
 
-        const observer = new IntersectionObserver((entries) => {
-            if (window.innerWidth >= 768) return;
-            entries.forEach(entry => {
-                if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                    const id = entry.target.getAttribute('data-id');
-                    if (id) {
-                        setSelectedId(id);
-                        setSynopsisOpenId(null);
-                    }
+        const detectCenteredCard = () => {
+            const containerCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+            let closestId: string | null = null;
+            let closestDist = Infinity;
+
+            Array.from(carousel.children).forEach(child => {
+                const el = child as HTMLElement;
+                const cardCenter = el.offsetLeft + el.offsetWidth / 2;
+                const dist = Math.abs(containerCenter - cardCenter);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    closestId = el.getAttribute('data-id');
                 }
             });
-        }, {
-            root: carouselRef.current,
-            threshold: 0.5
-        });
 
-        const children = Array.from(carouselRef.current.children);
-        children.forEach(child => observer.observe(child));
+            if (closestId) {
+                setSelectedId(closestId);
+                setSynopsisOpenId(null);
+            }
+        };
 
-        return () => observer.disconnect();
+        let scrollTimer: ReturnType<typeof setTimeout>;
+        const onScroll = () => {
+            clearTimeout(scrollTimer);
+            scrollTimer = setTimeout(detectCenteredCard, 80);
+        };
+
+        carousel.addEventListener('scroll', onScroll, { passive: true });
+        carousel.addEventListener('scrollend', detectCenteredCard, { passive: true });
+
+        return () => {
+            carousel.removeEventListener('scroll', onScroll);
+            carousel.removeEventListener('scrollend', detectCenteredCard);
+            clearTimeout(scrollTimer);
+        };
     }, [likes]);
 
     useEffect(() => {
@@ -208,7 +224,7 @@ export default function ResultsPage() {
                         <>
                             <div
                                 ref={carouselRef}
-                                className="flex md:grid md:grid-cols-3 gap-3 md:gap-5 overflow-x-auto snap-x snap-mandatory items-center px-[12vw] md:px-0 py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                                className="flex gap-3 md:gap-5 overflow-x-auto snap-x snap-mandatory items-center px-[12vw] md:px-[calc(50%_-_330px)] py-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                             >
                                 {likes.map((movie) => {
                                     const isSelected = movie.id === selectedId
@@ -229,7 +245,7 @@ export default function ResultsPage() {
                                                     }
                                                 }
                                             }}
-                                            className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] aspect-[2/3] md:w-auto md:aspect-[2/3] snap-center"
+                                            className="relative flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden group w-[58vw] md:w-[200px] aspect-[2/3] snap-center"
                                             initial={!hasWiggled ? { x: 50, opacity: 0 } : false}
                                             animate={{
                                                 x: 0,
